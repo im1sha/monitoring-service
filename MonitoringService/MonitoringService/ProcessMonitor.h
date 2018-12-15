@@ -10,12 +10,13 @@
 #include <stdio.h>
 #include <vector>
 #include <tlhelp32.h>
+#include "ProcessEntry.h"
 
 class ProcessMonitor
 {
 public:
 	ProcessMonitor();
 	~ProcessMonitor();
-	std::vector<DWORD> getProcessesIds();
+	std::vector<ProcessEntry> getProcessesInfo();
 };
 

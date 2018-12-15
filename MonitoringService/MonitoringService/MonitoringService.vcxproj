@@ -116,9 +116,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="ProcessEntry.cpp" />
     <ClCompile Include="ProcessMonitor.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ProcessEntry.h" />
     <ClInclude Include="ProcessMonitor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

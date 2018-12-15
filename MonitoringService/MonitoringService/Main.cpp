@@ -2,19 +2,27 @@
 #include <stdlib.h>
 #include <algorithm>
 #include "ProcessMonitor.h"
+#include "ProcessEntry.h"
 
 int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 {
-	auto pm = new ProcessMonitor();
+	auto monitor = new ProcessMonitor();
 
-	std::vector<DWORD> ids = pm->getProcessesIds();
-	std::sort(ids.begin(), ids.end());
+	std::vector<ProcessEntry> pe = monitor->getProcessesInfo();
 
-	printf("total IDS: %u\n\n", ids.size());
+	std::sort(pe.begin(), pe.end());
 
-	for (DWORD id : ids) 
+	/*std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
 	{
-		printf("%lu\n", id);
+		return ::lstrcmpiW(left.fileName, right.fileName) < 0;
+	});*/
+
+	printf("total IDS: %u\n\n", pe.size());
+
+	for (ProcessEntry p : pe)
+	{
+		printf("%-50S PID %-10lu PPID %-10lu RUN %-10lu \n", p.fileName, p.processId,
+			p.parentProcessId, p.runThreads);
 	}
 
 	::system("pause");
