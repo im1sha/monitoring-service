@@ -23,11 +23,18 @@ std::vector<ProcessEntry> ProcessMonitor::getProcessesInfo()
 	{		
 		WCHAR userName[MAX_PATH] {};
 		WCHAR domainName[MAX_PATH] {};
-		this->getUserByProcessId(procEntry32.th32ProcessID, userName, domainName);
+		volatile bool running;
+		volatile SIZE_T memoryUsage;
+
+		this->getUserInfoByProcessId(procEntry32.th32ProcessID, 
+			userName, domainName, &running, &memoryUsage);
 
 		ProcessEntry pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
-			 procEntry32.th32ParentProcessID, procEntry32.szExeFile, userName, domainName);
+			procEntry32.th32ParentProcessID, procEntry32.szExeFile, 
+			userName, domainName, running, memoryUsage);
+
 		infos.push_back(pe);
+
 	} while (::Process32Next(handle, &procEntry32));
 
 	::CloseHandle(handle);
@@ -100,13 +107,19 @@ void ProcessMonitor::CleanUp(PTOKEN_USER tokenInformation)
 	}
 }
 
-bool ProcessMonitor::getUserByProcessId(
+bool ProcessMonitor::getUserInfoByProcessId(
 	const DWORD processId,
 	WCHAR* userString,
-	WCHAR* domainString
+	WCHAR* domainString,
+	volatile bool * running, 
+	volatile SIZE_T * memoryUsageInMb
 )
 {
-	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, processId);
+	*memoryUsageInMb = 0;
+	*running = true;
+
+	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION |
+		PROCESS_VM_READ, FALSE, processId);
 	if (hProcess == nullptr) 
 	{
 		::wcscpy_s(domainString, MAX_PATH, L"-");
@@ -121,7 +134,23 @@ bool ProcessMonitor::getUserByProcessId(
 		}
 		return false; 
 	}
-		
+
+	DWORD waitResult = ::WaitForSingleObject(hProcess, (DWORD)0);
+
+	if (waitResult != WAIT_OBJECT_0)
+	{
+		*running = false;
+	}
+			
+	const SIZE_T bytesInMb = (SIZE_T) 1024*1024;
+	PROCESS_MEMORY_COUNTERS pmc;
+	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS);
+	if (::GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc)))
+	{
+		*memoryUsageInMb = pmc.WorkingSetSize / bytesInMb;
+	}
+
+	
 	HANDLE token = nullptr;
 
 	if (!::OpenProcessToken(hProcess, TOKEN_QUERY, &token))
@@ -138,3 +167,34 @@ bool ProcessMonitor::getUserByProcessId(
 	return result;
 }
 
+
+
+//float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)
+//{
+//	static unsigned long long _previousTotalTicks = 0;
+//	static unsigned long long _previousIdleTicks = 0;
+//
+//	unsigned long long totalTicksSinceLastTime = totalTicks - _previousTotalTicks;
+//	unsigned long long idleTicksSinceLastTime = idleTicks - _previousIdleTicks;
+//
+//	float ret = 1.0f - ((totalTicksSinceLastTime > 0) ? ((float)idleTicksSinceLastTime) / totalTicksSinceLastTime : 0);
+//
+//	_previousTotalTicks = totalTicks;
+//	_previousIdleTicks = idleTicks;
+//	return ret;
+//}
+//
+//unsigned long long FileTimeToInt64(const FILETIME & ft) 
+//{ 
+//	return (((unsigned long long)(ft.dwHighDateTime)) << 32) | ((unsigned long long)ft.dwLowDateTime);
+//}
+//
+//// Returns 1.0f for "CPU fully pinned", 0.0f for "CPU idle", or somewhere in between
+//// You'll need to call this at regular intervals, since it measures the load between
+//// the previous call and the current one.  Returns -1.0 on error.
+//float GetCPULoad()
+//{
+//	FILETIME idleTime, kernelTime, userTime;
+//	return GetSystemTimes(&idleTime, &kernelTime, &userTime) ? CalculateCPULoad(FileTimeToInt64(idleTime), FileTimeToInt64(kernelTime) + FileTimeToInt64(userTime)) : -1.0f;
+//}
+//

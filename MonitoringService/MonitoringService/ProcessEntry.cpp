@@ -6,7 +6,9 @@ ProcessEntry::ProcessEntry(
 	DWORD parentProcessId,
 	const WCHAR* fileName,
 	const WCHAR* userName,
-	const WCHAR* domainName
+	const WCHAR* domainName,
+	bool running,
+	SIZE_T memoryUsage
 )
 {
 	this->processId = processId;
@@ -15,6 +17,8 @@ ProcessEntry::ProcessEntry(
 	::wcscpy_s(this->fileName, MAX_PATH, fileName);
 	::wcscpy_s(this->userName, MAX_PATH, userName);
 	::wcscpy_s(this->domainName, MAX_PATH, domainName);
+	this->running = running;
+	this->memoryUsage = memoryUsage;
 }
 
 bool ProcessEntry::operator < (const ProcessEntry& pe) const

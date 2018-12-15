@@ -11,6 +11,8 @@
 #include <vector>
 #include <tlhelp32.h>
 #include <comdef.h>
+#include <psapi.h>
+
 #include "ProcessEntry.h"
 
 class ProcessMonitor
@@ -22,6 +24,8 @@ public:
 private:
 	bool getLogonFromToken(HANDLE hToken, WCHAR* userString, WCHAR* domainString);
 	void CleanUp(PTOKEN_USER tokenInformation);
-	bool getUserByProcessId(const DWORD procId, WCHAR* userString, WCHAR* domainString);
+	bool getUserInfoByProcessId(const DWORD procId, WCHAR* userString, 
+		WCHAR* domainString, volatile bool * running, volatile SIZE_T * memoryUsage
+	);
 };
 
