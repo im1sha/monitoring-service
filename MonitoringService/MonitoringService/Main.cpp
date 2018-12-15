@@ -17,12 +17,12 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 		return ::lstrcmpiW(left.fileName, right.fileName) < 0;
 	});*/
 
-	printf("total IDS: %u\n\n", pe.size());
+	::printf("total IDS: %u\n\n", pe.size());
 
 	for (ProcessEntry p : pe)
 	{
-		printf("%-50S PID %-10lu PPID %-10lu RUN %-10lu \n", p.fileName, p.processId,
-			p.parentProcessId, p.runThreads);
+		::printf("%-50S PID %-10lu PPID %-10lu RUN %-10lu U %S \n", p.fileName, p.processId,
+			p.parentProcessId, p.runThreads, p.userName);
 	}
 
 	::system("pause");

@@ -12,7 +12,8 @@ struct ProcessEntry
 		DWORD processId,
 		DWORD runThreads,
 		DWORD parentProcessId,
-		const WCHAR* fileName
+		const WCHAR* fileName,
+		const WCHAR* userName
 	);
 
 	bool operator < (const ProcessEntry& pe) const;
@@ -21,5 +22,6 @@ struct ProcessEntry
 	DWORD runThreads;
 	DWORD parentProcessId;
 	WCHAR fileName[MAX_PATH];
+	WCHAR userName[MAX_PATH];
 };
 
