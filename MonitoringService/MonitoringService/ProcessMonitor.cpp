@@ -20,26 +20,13 @@ std::vector<ProcessEntry> ProcessMonitor::getProcessesInfo()
 	::Process32First(handle, &procEntry32);
 
 	do
-	{
-		
+	{		
 		WCHAR userName[MAX_PATH] {};
-		//::GetUserNameW(userName, &procEntry32.th32ProcessID);
-			   
-//		HANDLE processHandle = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, procEntry32.th32ProcessID);
-//
-//		::OpenProcessToken(
-//			processHandle,
-//			PROCESS_QUERY_INFORMATION,
-//			PHANDLE TokenHandle
-//		);
-//		//getLogonFromToken()
-//
-//// 
-//		::CloseHandle(processHandle);
-//
+		WCHAR domainName[MAX_PATH] {};
+		this->getUserByProcessId(procEntry32.th32ProcessID, userName, domainName);
 
 		ProcessEntry pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
-			 procEntry32.th32ParentProcessID, procEntry32.szExeFile, userName);
+			 procEntry32.th32ParentProcessID, procEntry32.szExeFile, userName, domainName);
 		infos.push_back(pe);
 	} while (::Process32Next(handle, &procEntry32));
 
@@ -48,105 +35,106 @@ std::vector<ProcessEntry> ProcessMonitor::getProcessesInfo()
 	return infos;
 }
 
-BOOL ProcessMonitor::getLogonFromToken(
+bool ProcessMonitor::getLogonFromToken(
 	HANDLE token,
-	_bstr_t& userString,
-	_bstr_t& domainString
+	WCHAR* userString,
+	WCHAR* domainString
 )
 {
-	DWORD size = MAX_PATH;
-	BOOL isSuccessful = FALSE;
+	if (nullptr == token) 
+	{
+		return false;
+	}
+
+	DWORD maxSize = MAX_PATH;
 	DWORD length = 0;
-	userString = L"";
-	domainString = L"";
-	PTOKEN_USER tokenUser = nullptr;
+	PTOKEN_USER tokenInformation = nullptr;
 
-	//Verify the parameter passed in is not NULL.
-	if (nullptr == token) { goto Cleanup; }
-		
-
-	if (!GetTokenInformation(
-		token,         // handle to the access token
-		TokenUser,    // get information about the token's groups 
-		(LPVOID)tokenUser,   // pointer to PTOKEN_USER buffer
-		0,              // size of buffer
-		&length       // receives required buffer size
-	))
+	if (!::GetTokenInformation(token, TokenUser, (LPVOID)tokenInformation, 0, &length))
 	{
-		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-			goto Cleanup;
-
-		tokenUser = (PTOKEN_USER)HeapAlloc(GetProcessHeap(),
+		if (::GetLastError() != ERROR_INSUFFICIENT_BUFFER) 
+		{ 
+			return false;
+		}
+		tokenInformation = (PTOKEN_USER)::HeapAlloc(::GetProcessHeap(), 
 			HEAP_ZERO_MEMORY, length);
-
-		if (tokenUser == NULL)
-			goto Cleanup;
+		if (tokenInformation == nullptr) 
+		{ 
+			return false;
+		}
 	}
 
-	if (!GetTokenInformation(
-		token,         // handle to the access token
-		TokenUser,    // get information about the token's groups 
-		(LPVOID)tokenUser,   // pointer to PTOKEN_USER buffer
-		length,       // size of buffer
-		&length       // receives required buffer size
-	))
-	{
-		goto Cleanup;
+	if (!::GetTokenInformation(token, TokenUser, (LPVOID)tokenInformation, length, &length)) 
+	{ 
+		this->CleanUp(tokenInformation);
+		return false;
 	}
-	SID_NAME_USE SidType;
-	wchar_t lpName[MAX_PATH];
-	wchar_t lpDomain[MAX_PATH];
 
-	if (!LookupAccountSid(NULL, tokenUser->User.Sid, lpName, &size, lpDomain, &size, &SidType))
+	SID_NAME_USE sidType;
+	WCHAR name[MAX_PATH];
+	WCHAR domain[MAX_PATH];
+
+	if (!::LookupAccountSid(nullptr, tokenInformation->User.Sid, 
+		name, &maxSize, domain, &maxSize, &sidType))
 	{
-		DWORD dwResult = GetLastError();
-		if (dwResult == ERROR_NONE_MAPPED)
-			wcscpy_s(lpName, MAX_PATH, L"NONE_MAPPED");
-		else
+		if (::GetLastError() == ERROR_NONE_MAPPED)
 		{
-			printf("LookupAccountSid Error %lu\n", GetLastError());
+			::wcscpy_s(name, MAX_PATH, L"NONE_MAPPED");
 		}
 	}
 	else
 	{
-		printf("Current user is  %S\\%S\n",
-			lpDomain, lpName);
-		userString = lpName;
-		domainString = lpDomain;
-		isSuccessful = TRUE;
+		::wcscpy_s(userString, MAX_PATH, name);
+		::wcscpy_s(domainString, MAX_PATH, domain);
+		return true;
 	}
-
-Cleanup:
-
-	if (tokenUser != nullptr) 
-	{
-		HeapFree(GetProcessHeap(), 0, (LPVOID)tokenUser);
-	}
-	return isSuccessful;
+	return false;
 }
 
 
-void ProcessMonitor::CleanUp() 
+void ProcessMonitor::CleanUp(PTOKEN_USER tokenInformation)
 {
-
+	if (tokenInformation != nullptr)
+	{
+		::HeapFree(::GetProcessHeap(), 0, (LPVOID)tokenInformation);
+	}
 }
 
-HRESULT ProcessMonitor::GetUserFromProcess(const DWORD procId, _bstr_t& strUser, _bstr_t& strdomain)
+bool ProcessMonitor::getUserByProcessId(
+	const DWORD processId,
+	WCHAR* userString,
+	WCHAR* domainString
+)
 {
-	HANDLE hProcess = OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, procId);
-	if (hProcess == NULL)
-		return E_FAIL;
-	HANDLE hToken = NULL;
-
-	if (!OpenProcessToken(hProcess, TOKEN_QUERY, &hToken))
+	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, processId);
+	if (hProcess == nullptr) 
 	{
-		CloseHandle(hProcess);
-		return E_FAIL;
-	}
-	BOOL bres = getLogonFromToken(hToken, strUser, strdomain);
+		::wcscpy_s(domainString, MAX_PATH, L"-");
 
-	CloseHandle(hToken);
-	CloseHandle(hProcess);
-	return bres ? S_OK : E_FAIL;
+		if (::GetLastError() == ERROR_INVALID_PARAMETER)
+		{
+			::wcscpy_s(userString, MAX_PATH, L"System");			
+		}
+		else if (::GetLastError() == ERROR_ACCESS_DENIED)
+		{
+			::wcscpy_s(userString, MAX_PATH, L"Idle/CSRSS");
+		}
+		return false; 
+	}
+		
+	HANDLE token = nullptr;
+
+	if (!::OpenProcessToken(hProcess, TOKEN_QUERY, &token))
+	{
+		::CloseHandle(hProcess);
+		return false;
+	}
+
+	bool result = this->getLogonFromToken(token, userString, domainString);
+
+	::CloseHandle(token);
+	::CloseHandle(hProcess);
+
+	return result;
 }
 

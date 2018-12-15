@@ -20,8 +20,8 @@ public:
 	~ProcessMonitor();
 	std::vector<ProcessEntry> getProcessesInfo();
 private:
-	BOOL getLogonFromToken(HANDLE hToken, _bstr_t & strUser, _bstr_t & strdomain);
-	void CleanUp();
-	HRESULT GetUserFromProcess(const DWORD procId, _bstr_t & strUser, _bstr_t & strdomain);
+	bool getLogonFromToken(HANDLE hToken, WCHAR* userString, WCHAR* domainString);
+	void CleanUp(PTOKEN_USER tokenInformation);
+	bool getUserByProcessId(const DWORD procId, WCHAR* userString, WCHAR* domainString);
 };
 

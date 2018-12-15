@@ -21,8 +21,8 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 
 	for (ProcessEntry p : pe)
 	{
-		::printf("%-50S PID %-10lu PPID %-10lu RUN %-10lu U %S \n", p.fileName, p.processId,
-			p.parentProcessId, p.runThreads, p.userName);
+		::printf("%-40S PID %-10lu PPID %-10lu RUN %-10lu U %-15S D %S\n", p.fileName, p.processId,
+			p.parentProcessId, p.runThreads, p.userName, p.domainName);
 	}
 
 	::system("pause");

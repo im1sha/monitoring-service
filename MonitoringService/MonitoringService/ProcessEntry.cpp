@@ -5,7 +5,8 @@ ProcessEntry::ProcessEntry(
 	DWORD runThreads,
 	DWORD parentProcessId,
 	const WCHAR* fileName,
-	const WCHAR* userName
+	const WCHAR* userName,
+	const WCHAR* domainName
 )
 {
 	this->processId = processId;
@@ -13,6 +14,7 @@ ProcessEntry::ProcessEntry(
 	this->parentProcessId = parentProcessId;
 	::wcscpy_s(this->fileName, MAX_PATH, fileName);
 	::wcscpy_s(this->userName, MAX_PATH, userName);
+	::wcscpy_s(this->domainName, MAX_PATH, domainName);
 }
 
 bool ProcessEntry::operator < (const ProcessEntry& pe) const
