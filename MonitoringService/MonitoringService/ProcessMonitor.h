@@ -29,7 +29,8 @@ private:
 	bool getUserInfoByProcessId(const DWORD procId, WCHAR* userString, 
 		WCHAR* domainString, int * running, long long * memoryUsageInMb
 	);
-	bool getWorkingSetSize(HANDLE hProcess, long long * memoryUsageInMb);
+	bool getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb);
 	bool setPrivilege(HANDLE hToken, const WCHAR * lpszPrivilege, BOOL bEnablePrivilege);
+	void writeUsernameAndDomainOnError(WCHAR * userString, WCHAR * domainString);
 };
 

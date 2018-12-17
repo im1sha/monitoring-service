@@ -56,8 +56,8 @@ bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 	{		
 		WCHAR userName[MAX_PATH] {};
 		WCHAR domainName[MAX_PATH] {};
-		int running;
-		long long memoryUsage;
+		int running = -2;
+		long long memoryUsage = -2;
 
 		this->getUserInfoByProcessId(procEntry32.th32ProcessID, 
 			userName, domainName, &running, &memoryUsage);
@@ -101,7 +101,7 @@ bool ProcessMonitor::getLogonFromToken(
 		tokenInformation = (PTOKEN_USER)::HeapAlloc(::GetProcessHeap(), 
 			HEAP_ZERO_MEMORY, length);
 		if (tokenInformation == nullptr) 
-		{ 
+		{
 			return false;
 		}
 	}
@@ -154,52 +154,44 @@ bool ProcessMonitor::getUserInfoByProcessId(
 	*running = -1;
 
 	// mb:: add SYNCHRONIZE: required to wait for process
-	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, processId); //
+	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId); //
 
 	if (hProcess == nullptr)
 	{
-		::wcscpy_s(domainString, MAX_PATH, L"-");
-
-		if (::GetLastError() == ERROR_INVALID_PARAMETER)
-		{
-			::wcscpy_s(userString, MAX_PATH, L"System");
-		}
-		else if (::GetLastError() == ERROR_ACCESS_DENIED)
-		{
-			::wcscpy_s(userString, MAX_PATH, L"Idle/CSRSS");
-		}
-		
+		this->writeUsernameAndDomainOnError(userString, domainString);
 		return false;
 	}
 		
-	bool result1 = true;
-
 	HANDLE processToken = nullptr;
+
+	bool result1 = this->getPrivateUsage(hProcess, memoryUsageInMb);
 
 	if (::OpenProcessToken(hProcess, TOKEN_QUERY, &processToken))
 	{	
-		result1 = this->getLogonFromToken(processToken, userString, domainString)
-			& this->getWorkingSetSize(hProcess, memoryUsageInMb);	
+		result1 &= this->getLogonFromToken(processToken, userString, domainString);
 	}
-	
+	else
+	{ 
+		this->writeUsernameAndDomainOnError(userString, domainString);
+	}
 	
 	::CloseHandle(processToken);
 	::CloseHandle(hProcess);
 	return result1;
 }
 
-bool ProcessMonitor::getWorkingSetSize(HANDLE hProcess, long long * memoryUsageInMb)
+bool ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb)
 {
 	bool result = false;
 
 	const long long bytesInMb = (long long)1024 * 1024;
 
-	PROCESS_MEMORY_COUNTERS pmc;
-	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS);
+	PROCESS_MEMORY_COUNTERS_EX pmc;
+	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS_EX);
 
-	if (::GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc)))
+	if (::GetProcessMemoryInfo(hProcess, (PPROCESS_MEMORY_COUNTERS)&pmc, sizeof(pmc)))
 	{
-		*memoryUsageInMb = (long long)pmc.WorkingSetSize / bytesInMb;
+		*memoryUsageInMb = (long long)pmc.PrivateUsage / bytesInMb;
 		result = true;
 	}
 
@@ -247,7 +239,19 @@ bool ProcessMonitor::setPrivilege(
 	return true;
 }
 
+void ProcessMonitor::writeUsernameAndDomainOnError(WCHAR* userString, WCHAR* domainString)
+{
+	::wcscpy_s(domainString, MAX_PATH, L"-");
 
+	if (::GetLastError() == ERROR_INVALID_PARAMETER)
+	{
+		::wcscpy_s(userString, MAX_PATH, L"System");
+	}
+	else if (::GetLastError() == ERROR_ACCESS_DENIED)
+	{
+		::wcscpy_s(userString, MAX_PATH, L"Idle/CSRSS");
+	}
+}
 
 
 //float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)
