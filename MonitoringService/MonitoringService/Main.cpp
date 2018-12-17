@@ -22,7 +22,7 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 
 	for (ProcessEntry p : pe)
 	{
-		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  MEM %lli\n", p.fileName, p.processId,
+		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  MEM %-5lli\n", p.fileName, p.processId,
 			p.parentProcessId, p.runThreads, p.userName, p.memoryUsage);
 	}
 

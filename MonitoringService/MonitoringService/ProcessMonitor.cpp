@@ -27,7 +27,8 @@ bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 		return false;
 	}
 
-	if (!::OpenThreadToken(::GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+	if (!::OpenThreadToken(::GetCurrentThread(), 
+		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
 		FALSE, &currentThreadToken))
 	{
 		if (::GetLastError() == ERROR_NO_TOKEN)
@@ -36,7 +37,9 @@ bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 			{
 				return false;
 			}			
-			if (!::OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, FALSE, &currentThreadToken)) 
+			if (!::OpenThreadToken(GetCurrentThread(), 
+				TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, 
+				FALSE, &currentThreadToken)) 
 			{
 				return false;
 			}
@@ -153,7 +156,6 @@ bool ProcessMonitor::getUserInfoByProcessId(
 	// mb:: add SYNCHRONIZE: required to wait for process
 	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, processId); //
 
-
 	if (hProcess == nullptr)
 	{
 		::wcscpy_s(domainString, MAX_PATH, L"-");
@@ -164,60 +166,15 @@ bool ProcessMonitor::getUserInfoByProcessId(
 		}
 		else if (::GetLastError() == ERROR_ACCESS_DENIED)
 		{
-			::wcscpy_s(userString, MAX_PATH, /*L"Idle/CSRSS"*/L"---NO---");
+			::wcscpy_s(userString, MAX_PATH, L"Idle/CSRSS");
 		}
 		
 		return false;
 	}
-
-	// int * running: NOW NOT IN USE
-	/*
-	if (hProcess != nullptr)
-	{
-		DWORD waitResult = ::WaitForSingleObject(hProcess, (DWORD)0);
-
-		if (waitResult == WAIT_OBJECT_0)
-		{
-			*running = 1;
-		}
-		else if (waitResult == WAIT_TIMEOUT)
-		{
-			*running = 2;
-		}
-		else if (waitResult == WAIT_FAILED)
-		{
-			*running = 3;
-		}
-		else
-		{
-			*running = 4;
-		}
-	}
-	*/
-	
+		
 	bool result1 = true;
 
 	HANDLE processToken = nullptr;
-
-	/*if (!::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &processToken))
-	{
-		if (::GetLastError() == ERROR_NO_TOKEN)
-		{
-			if (!::ImpersonateAnonymousToken(processToken))
-			{
-				result1 = false;
-			}
-			if (!::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &processToken))
-			{
-				result1 = false;
-			}
-			result1 = true;
-		}
-		else
-		{
-			result1 = false;
-		}
-	}*/
 
 	if (::OpenProcessToken(hProcess, TOKEN_QUERY, &processToken))
 	{	
@@ -276,7 +233,7 @@ bool ProcessMonitor::setPrivilege(
 	}
 
 	if (!::AdjustTokenPrivileges(token, FALSE, &tp, sizeof(TOKEN_PRIVILEGES),
-		(PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL))
+		(PTOKEN_PRIVILEGES)nullptr, (PDWORD)nullptr))
 	{
 
 		return false;
