@@ -8,24 +8,28 @@
 
 #include <windows.h>
 #include <stdio.h>
+#pragma comment(lib, "advapi32.lib")
 #include <vector>
 #include <tlhelp32.h>
 #include <comdef.h>
 #include <psapi.h>
-
 #include "ProcessEntry.h"
+
+
 
 class ProcessMonitor
 {
 public:
 	ProcessMonitor();
 	~ProcessMonitor();
-	std::vector<ProcessEntry> getProcessesInfo();
+	bool getProcessesInfo(std::vector<ProcessEntry> * processInfos);
 private:
 	bool getLogonFromToken(HANDLE hToken, WCHAR* userString, WCHAR* domainString);
-	void CleanUp(PTOKEN_USER tokenInformation);
+	void cleanUp(PTOKEN_USER tokenInformation);
 	bool getUserInfoByProcessId(const DWORD procId, WCHAR* userString, 
-		WCHAR* domainString, volatile bool * running, volatile SIZE_T * memoryUsage
+		WCHAR* domainString, int * running, long long * memoryUsageInMb
 	);
+	bool getWorkingSetSize(HANDLE hProcess, long long * memoryUsageInMb);
+	bool setPrivilege(HANDLE hToken, const WCHAR * lpszPrivilege, BOOL bEnablePrivilege);
 };
 

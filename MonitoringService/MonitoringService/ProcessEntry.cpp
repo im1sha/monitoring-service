@@ -7,8 +7,8 @@ ProcessEntry::ProcessEntry(
 	const WCHAR* fileName,
 	const WCHAR* userName,
 	const WCHAR* domainName,
-	bool running,
-	SIZE_T memoryUsage
+	int running,
+	long long memoryUsage
 )
 {
 	this->processId = processId;

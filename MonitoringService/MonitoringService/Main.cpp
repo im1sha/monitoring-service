@@ -8,7 +8,8 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 {
 	auto monitor = new ProcessMonitor();
 
-	std::vector<ProcessEntry> pe = monitor->getProcessesInfo();
+	std::vector<ProcessEntry> pe;
+	monitor->getProcessesInfo(&pe);
 
 	std::sort(pe.begin(), pe.end());
 
@@ -21,8 +22,8 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 
 	for (ProcessEntry p : pe)
 	{
-		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-12S  RUN %-5i MEM %lu\n", p.fileName, p.processId,
-			p.parentProcessId, p.runThreads, p.userName, p.running?1:0, p.memoryUsage);
+		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  MEM %lli\n", p.fileName, p.processId,
+			p.parentProcessId, p.runThreads, p.userName, p.memoryUsage);
 	}
 
 	::system("pause");

@@ -8,23 +8,53 @@ ProcessMonitor::~ProcessMonitor()
 {
 }
 
-std::vector<ProcessEntry> ProcessMonitor::getProcessesInfo()
+bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 {
-	std::vector<ProcessEntry> infos;
+	HANDLE currentThreadToken;
+	HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
 
-	HANDLE handle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); // <
+	if (snapshotHandle == INVALID_HANDLE_VALUE)
+	{
+		return false;
+	}
 
 	PROCESSENTRY32 procEntry32;
 	procEntry32.dwSize = sizeof(PROCESSENTRY32);
 
-	::Process32First(handle, &procEntry32);
+	if (!::Process32First(snapshotHandle, &procEntry32))
+	{
+		::CloseHandle(snapshotHandle);
+		return false;
+	}
+
+	if (!::OpenThreadToken(::GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
+		FALSE, &currentThreadToken))
+	{
+		if (::GetLastError() == ERROR_NO_TOKEN)
+		{
+			if (!::ImpersonateSelf(SecurityImpersonation)) 
+			{
+				return false;
+			}			
+			if (!::OpenThreadToken(GetCurrentThread(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, FALSE, &currentThreadToken)) 
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	this->setPrivilege(currentThreadToken, SE_DEBUG_NAME, TRUE);
 
 	do
 	{		
 		WCHAR userName[MAX_PATH] {};
 		WCHAR domainName[MAX_PATH] {};
-		volatile bool running;
-		volatile SIZE_T memoryUsage;
+		int running;
+		long long memoryUsage;
 
 		this->getUserInfoByProcessId(procEntry32.th32ProcessID, 
 			userName, domainName, &running, &memoryUsage);
@@ -33,13 +63,15 @@ std::vector<ProcessEntry> ProcessMonitor::getProcessesInfo()
 			procEntry32.th32ParentProcessID, procEntry32.szExeFile, 
 			userName, domainName, running, memoryUsage);
 
-		infos.push_back(pe);
+		processInfos->push_back(pe);
 
-	} while (::Process32Next(handle, &procEntry32));
+	} while (::Process32Next(snapshotHandle, &procEntry32));
 
-	::CloseHandle(handle);
+	::CloseHandle(snapshotHandle);
 
-	return infos;
+	::RevertToSelf();
+
+	return true;
 }
 
 bool ProcessMonitor::getLogonFromToken(
@@ -73,7 +105,7 @@ bool ProcessMonitor::getLogonFromToken(
 
 	if (!::GetTokenInformation(token, TokenUser, (LPVOID)tokenInformation, length, &length)) 
 	{ 
-		this->CleanUp(tokenInformation);
+		this->cleanUp(tokenInformation);
 		return false;
 	}
 
@@ -99,7 +131,7 @@ bool ProcessMonitor::getLogonFromToken(
 }
 
 
-void ProcessMonitor::CleanUp(PTOKEN_USER tokenInformation)
+void ProcessMonitor::cleanUp(PTOKEN_USER tokenInformation)
 {
 	if (tokenInformation != nullptr)
 	{
@@ -111,61 +143,153 @@ bool ProcessMonitor::getUserInfoByProcessId(
 	const DWORD processId,
 	WCHAR* userString,
 	WCHAR* domainString,
-	volatile bool * running, 
-	volatile SIZE_T * memoryUsageInMb
+	int * running,
+	long long * memoryUsageInMb
 )
 {
-	*memoryUsageInMb = 0;
-	*running = true;
+	*memoryUsageInMb = -1;
+	*running = -1;
 
-	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION |
-		PROCESS_VM_READ, FALSE, processId);
-	if (hProcess == nullptr) 
+	// mb:: add SYNCHRONIZE: required to wait for process
+	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_INFORMATION, FALSE, processId); //
+
+
+	if (hProcess == nullptr)
 	{
 		::wcscpy_s(domainString, MAX_PATH, L"-");
 
 		if (::GetLastError() == ERROR_INVALID_PARAMETER)
 		{
-			::wcscpy_s(userString, MAX_PATH, L"System");			
+			::wcscpy_s(userString, MAX_PATH, L"System");
 		}
 		else if (::GetLastError() == ERROR_ACCESS_DENIED)
 		{
-			::wcscpy_s(userString, MAX_PATH, L"Idle/CSRSS");
+			::wcscpy_s(userString, MAX_PATH, /*L"Idle/CSRSS"*/L"---NO---");
 		}
-		return false; 
-	}
-
-	DWORD waitResult = ::WaitForSingleObject(hProcess, (DWORD)0);
-
-	if (waitResult != WAIT_OBJECT_0)
-	{
-		*running = false;
-	}
-			
-	const SIZE_T bytesInMb = (SIZE_T) 1024*1024;
-	PROCESS_MEMORY_COUNTERS pmc;
-	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS);
-	if (::GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc)))
-	{
-		*memoryUsageInMb = pmc.WorkingSetSize / bytesInMb;
-	}
-
-	
-	HANDLE token = nullptr;
-
-	if (!::OpenProcessToken(hProcess, TOKEN_QUERY, &token))
-	{
-		::CloseHandle(hProcess);
+		
 		return false;
 	}
 
-	bool result = this->getLogonFromToken(token, userString, domainString);
+	// int * running: NOW NOT IN USE
+	/*
+	if (hProcess != nullptr)
+	{
+		DWORD waitResult = ::WaitForSingleObject(hProcess, (DWORD)0);
 
-	::CloseHandle(token);
+		if (waitResult == WAIT_OBJECT_0)
+		{
+			*running = 1;
+		}
+		else if (waitResult == WAIT_TIMEOUT)
+		{
+			*running = 2;
+		}
+		else if (waitResult == WAIT_FAILED)
+		{
+			*running = 3;
+		}
+		else
+		{
+			*running = 4;
+		}
+	}
+	*/
+	
+	bool result1 = true;
+
+	HANDLE processToken = nullptr;
+
+	/*if (!::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &processToken))
+	{
+		if (::GetLastError() == ERROR_NO_TOKEN)
+		{
+			if (!::ImpersonateAnonymousToken(processToken))
+			{
+				result1 = false;
+			}
+			if (!::OpenProcessToken(hProcess, TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &processToken))
+			{
+				result1 = false;
+			}
+			result1 = true;
+		}
+		else
+		{
+			result1 = false;
+		}
+	}*/
+
+	if (::OpenProcessToken(hProcess, TOKEN_QUERY, &processToken))
+	{	
+		result1 = this->getLogonFromToken(processToken, userString, domainString)
+			& this->getWorkingSetSize(hProcess, memoryUsageInMb);	
+	}
+	
+	
+	::CloseHandle(processToken);
 	::CloseHandle(hProcess);
+	return result1;
+}
+
+bool ProcessMonitor::getWorkingSetSize(HANDLE hProcess, long long * memoryUsageInMb)
+{
+	bool result = false;
+
+	const long long bytesInMb = (long long)1024 * 1024;
+
+	PROCESS_MEMORY_COUNTERS pmc;
+	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS);
+
+	if (::GetProcessMemoryInfo(hProcess, &pmc, sizeof(pmc)))
+	{
+		*memoryUsageInMb = (long long)pmc.WorkingSetSize / bytesInMb;
+		result = true;
+	}
 
 	return result;
 }
+
+bool ProcessMonitor::setPrivilege(
+	HANDLE token,				// access token handle
+	const WCHAR * privilege,	// name of privilege to enable/disable
+	BOOL enablePrivilege		// to enable or disable privilege
+)
+{
+	TOKEN_PRIVILEGES tp;
+	LUID luid;
+
+	if (!::LookupPrivilegeValue(nullptr, privilege, &luid))       
+	{
+		return false;
+	}
+
+	tp.PrivilegeCount = 1;
+	tp.Privileges[0].Luid = luid;
+
+	if (enablePrivilege) 
+	{
+		tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+	}
+	else 
+	{
+		tp.Privileges[0].Attributes = 0;
+	}
+
+	if (!::AdjustTokenPrivileges(token, FALSE, &tp, sizeof(TOKEN_PRIVILEGES),
+		(PTOKEN_PRIVILEGES)NULL, (PDWORD)NULL))
+	{
+
+		return false;
+	}
+
+	if (::GetLastError() == ERROR_NOT_ALL_ASSIGNED)
+	{
+
+		return false;
+	}
+	return true;
+}
+
 
 
 
@@ -198,3 +322,6 @@ bool ProcessMonitor::getUserInfoByProcessId(
 //	return GetSystemTimes(&idleTime, &kernelTime, &userTime) ? CalculateCPULoad(FileTimeToInt64(idleTime), FileTimeToInt64(kernelTime) + FileTimeToInt64(userTime)) : -1.0f;
 //}
 //
+
+
+
