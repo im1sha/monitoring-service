@@ -12,7 +12,7 @@ bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 {
 	HANDLE currentThreadToken;
 	HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
-
+	
 	if (snapshotHandle == INVALID_HANDLE_VALUE)
 	{
 		return false;
