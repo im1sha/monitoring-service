@@ -8,7 +8,7 @@ ProcessMonitor::~ProcessMonitor()
 {
 }
 
-bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
+bool __stdcall ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 {
 	HANDLE currentThreadToken;
 	HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
@@ -77,7 +77,7 @@ bool ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
 	return true;
 }
 
-bool ProcessMonitor::getLogonFromToken(
+bool __stdcall ProcessMonitor::getLogonFromToken(
 	HANDLE token,
 	WCHAR* userString,
 	WCHAR* domainString
@@ -134,7 +134,7 @@ bool ProcessMonitor::getLogonFromToken(
 }
 
 
-void ProcessMonitor::cleanUp(PTOKEN_USER tokenInformation)
+void __stdcall ProcessMonitor::cleanUp(PTOKEN_USER tokenInformation)
 {
 	if (tokenInformation != nullptr)
 	{
@@ -142,7 +142,7 @@ void ProcessMonitor::cleanUp(PTOKEN_USER tokenInformation)
 	}
 }
 
-bool ProcessMonitor::getUserInfoByProcessId(
+bool __stdcall ProcessMonitor::getUserInfoByProcessId(
 	const DWORD processId,
 	WCHAR* userString,
 	WCHAR* domainString,
@@ -180,7 +180,7 @@ bool ProcessMonitor::getUserInfoByProcessId(
 	return result1;
 }
 
-bool ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb)
+bool __stdcall ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb)
 {
 	bool result = false;
 
@@ -198,7 +198,7 @@ bool ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInM
 	return result;
 }
 
-bool ProcessMonitor::setPrivilege(
+bool __stdcall ProcessMonitor::setPrivilege(
 	HANDLE token,				// access token handle
 	const WCHAR * privilege,	// name of privilege to enable/disable
 	BOOL enablePrivilege		// to enable or disable privilege
@@ -239,7 +239,7 @@ bool ProcessMonitor::setPrivilege(
 	return true;
 }
 
-void ProcessMonitor::writeUsernameAndDomainOnError(WCHAR* userString, WCHAR* domainString)
+void __stdcall ProcessMonitor::writeUsernameAndDomainOnError(WCHAR* userString, WCHAR* domainString)
 {
 	::wcscpy_s(domainString, MAX_PATH, L"-");
 

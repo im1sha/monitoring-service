@@ -9,6 +9,7 @@ CounterAnalizer::~CounterAnalizer()
 {
 }
 
+
 PDH_COUNTER_PATH_ELEMENTS * __stdcall CounterAnalizer::getPathsToCpuCounter(
 	WCHAR * machineName,
 	std::vector<WCHAR *> instances // in format : Process(X)
