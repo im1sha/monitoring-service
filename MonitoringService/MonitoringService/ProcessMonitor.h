@@ -8,12 +8,14 @@
 
 #include <windows.h>
 #include <stdio.h>
-#pragma comment(lib, "advapi32.lib")
 #include <vector>
 #include <tlhelp32.h>
 #include <comdef.h>
 #include <psapi.h>
-#include "ProcessEntry.h"
+
+#pragma comment(lib, "advapi32.lib")
+
+#include "ProcessInfo.h"
 #include "CounterAnalizer.h"
 
 class ProcessMonitor
@@ -21,15 +23,47 @@ class ProcessMonitor
 public:
 	ProcessMonitor();
 	~ProcessMonitor();
-	bool __stdcall getProcessesInfo(std::vector<ProcessEntry> * processInfos);
-private:
-	bool __stdcall getLogonFromToken(HANDLE hToken, WCHAR* userString, WCHAR* domainString);
-	void __stdcall cleanUp(PTOKEN_USER tokenInformation);
-	bool __stdcall getUserInfoByProcessId(const DWORD procId, WCHAR* userString,
-		WCHAR* domainString, int * running, long long * memoryUsageInMb
+
+	bool __stdcall getProcessesInfo(
+		std::vector<ProcessInfo> * processInfos
 	);
-	bool __stdcall getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb);
-	bool __stdcall setPrivilege(HANDLE hToken, const WCHAR * lpszPrivilege, BOOL bEnablePrivilege);
-	void __stdcall writeUsernameAndDomainOnError(WCHAR * userString, WCHAR * domainString);
+
+private:
+	bool __stdcall getLogonDataFromToken(
+		HANDLE token, 
+		WCHAR* userString,
+		WCHAR* domainString
+	);
+
+	void __stdcall cleanUp(
+		PTOKEN_USER tokenInformation
+	);
+
+	bool __stdcall getLogonDataByPid(
+		const DWORD procId, 
+		WCHAR* userString,
+		WCHAR* domainString
+	);
+
+	//bool __stdcall getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb);
+
+	bool __stdcall setPrivilege(
+		HANDLE token,
+		const WCHAR * privilege, 
+		BOOL enablePrivilege
+	);
+
+	void __stdcall writeLogonDataOnError(
+		WCHAR * userString,
+		WCHAR * domainString
+	);
+
+	bool _stdcall getCounterStatistics(
+		double * workingSet,
+		double * workingSetPrivate,
+		double * io,
+		double * processorUsage,
+		double * elapsedTime
+	);
 };
 

@@ -10,7 +10,7 @@ CounterAnalizer::~CounterAnalizer()
 }
 
 
-PDH_COUNTER_PATH_ELEMENTS * __stdcall CounterAnalizer::getPathsToCpuCounter(
+PDH_COUNTER_PATH_ELEMENTS * __stdcall CounterAnalizer::getPathsToCounter(
 	WCHAR * machineName,
 	std::vector<WCHAR *> instances // in format : Process(X)
 )
@@ -151,7 +151,7 @@ bool __stdcall CounterAnalizer::collectPerfomanceData(
 					instances->push_back(instance);
 				}
 
-				PDH_COUNTER_PATH_ELEMENTS* pcpe = getPathsToCpuCounter(nullptr, *instances);
+				PDH_COUNTER_PATH_ELEMENTS* pcpe = getPathsToCounter(nullptr, *instances);
 
 				getCounterValues(pcpe, instances->size(), values);
 			}

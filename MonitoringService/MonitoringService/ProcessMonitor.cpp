@@ -8,7 +8,9 @@ ProcessMonitor::~ProcessMonitor()
 {
 }
 
-bool __stdcall ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * processInfos)
+bool __stdcall ProcessMonitor::getProcessesInfo(
+	std::vector<ProcessInfo> * processInfos
+)
 {
 	HANDLE currentThreadToken;
 	HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
@@ -54,17 +56,22 @@ bool __stdcall ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * proc
 
 	do
 	{		
-		WCHAR userName[MAX_PATH] {};
-		WCHAR domainName[MAX_PATH] {};
-		int running = -2;
-		long long memoryUsage = -2;
+		WCHAR userName[MAX_PATH] { };
+		WCHAR domainName[MAX_PATH] { };
 
-		this->getUserInfoByProcessId(procEntry32.th32ProcessID, 
-			userName, domainName, &running, &memoryUsage);
+		double workingSet = 0;
+		double workingSetPrivate = 0;
+		double io = 0;
+		double processorUsage = 0;
+		double elapsedTime = 0;
 
-		ProcessEntry pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
+		this->getLogonDataByPid(procEntry32.th32ProcessID, 
+			userName, domainName);
+
+		ProcessInfo pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
 			procEntry32.th32ParentProcessID, procEntry32.szExeFile, 
-			userName, domainName, running, memoryUsage);
+			userName, domainName, workingSet, workingSetPrivate, 
+			io, processorUsage, elapsedTime);
 
 		processInfos->push_back(pe);
 
@@ -77,7 +84,7 @@ bool __stdcall ProcessMonitor::getProcessesInfo(std::vector<ProcessEntry> * proc
 	return true;
 }
 
-bool __stdcall ProcessMonitor::getLogonFromToken(
+bool __stdcall ProcessMonitor::getLogonDataFromToken(
 	HANDLE token,
 	WCHAR* userString,
 	WCHAR* domainString
@@ -87,6 +94,10 @@ bool __stdcall ProcessMonitor::getLogonFromToken(
 	{
 		return false;
 	}
+
+	//HMODULE hModule = GetModuleHandleW(NULL);
+	//WCHAR path[MAX_PATH];
+	//GetModuleFileNameW(hModule, path, MAX_PATH);
 
 	DWORD maxSize = MAX_PATH;
 	DWORD length = 0;
@@ -134,7 +145,9 @@ bool __stdcall ProcessMonitor::getLogonFromToken(
 }
 
 
-void __stdcall ProcessMonitor::cleanUp(PTOKEN_USER tokenInformation)
+void __stdcall ProcessMonitor::cleanUp(
+	PTOKEN_USER tokenInformation
+)
 {
 	if (tokenInformation != nullptr)
 	{
@@ -142,61 +155,56 @@ void __stdcall ProcessMonitor::cleanUp(PTOKEN_USER tokenInformation)
 	}
 }
 
-bool __stdcall ProcessMonitor::getUserInfoByProcessId(
+bool __stdcall ProcessMonitor::getLogonDataByPid(
 	const DWORD processId,
 	WCHAR* userString,
-	WCHAR* domainString,
-	int * running,
-	long long * memoryUsageInMb
+	WCHAR* domainString
 )
 {
-	*memoryUsageInMb = -1;
-	*running = -1;
+	bool result = false;
 
-	// mb:: add SYNCHRONIZE: required to wait for process
+	// now not in use:: add SYNCHRONIZE: required to wait for process
 	HANDLE hProcess = ::OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, FALSE, processId); //
 
 	if (hProcess == nullptr)
 	{
-		this->writeUsernameAndDomainOnError(userString, domainString);
-		return false;
+		this->writeLogonDataOnError(userString, domainString);
+		return result;
 	}
 		
 	HANDLE processToken = nullptr;
 
-	bool result1 = this->getPrivateUsage(hProcess, memoryUsageInMb);
-
 	if (::OpenProcessToken(hProcess, TOKEN_QUERY, &processToken))
 	{	
-		result1 &= this->getLogonFromToken(processToken, userString, domainString);
+		result = this->getLogonDataFromToken(processToken, userString, domainString);
 	}
 	else
 	{ 
-		this->writeUsernameAndDomainOnError(userString, domainString);
+		this->writeLogonDataOnError(userString, domainString);
 	}
 	
 	::CloseHandle(processToken);
 	::CloseHandle(hProcess);
-	return result1;
-}
-
-bool __stdcall ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb)
-{
-	bool result = false;
-
-	const long long bytesInMb = (long long)1024 * 1024;
-
-	PROCESS_MEMORY_COUNTERS_EX pmc;
-	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS_EX);
-
-	if (::GetProcessMemoryInfo(hProcess, (PPROCESS_MEMORY_COUNTERS)&pmc, sizeof(pmc)))
-	{
-		*memoryUsageInMb = (long long)pmc.PrivateUsage / bytesInMb;
-		result = true;
-	}
-
 	return result;
 }
+
+//bool __stdcall ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb)
+//{
+//	bool result = false;
+//
+//	const long long bytesInMb = (long long)1024 * 1024;
+//
+//	PROCESS_MEMORY_COUNTERS_EX pmc;
+//	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS_EX);
+//
+//	if (::GetProcessMemoryInfo(hProcess, (PPROCESS_MEMORY_COUNTERS)&pmc, sizeof(pmc)))
+//	{
+//		*memoryUsageInMb = (long long)pmc.PrivateUsage / bytesInMb;
+//		result = true;
+//	}
+//
+//	return result;
+//}
 
 bool __stdcall ProcessMonitor::setPrivilege(
 	HANDLE token,				// access token handle
@@ -239,7 +247,10 @@ bool __stdcall ProcessMonitor::setPrivilege(
 	return true;
 }
 
-void __stdcall ProcessMonitor::writeUsernameAndDomainOnError(WCHAR* userString, WCHAR* domainString)
+void __stdcall ProcessMonitor::writeLogonDataOnError(
+	WCHAR* userString,
+	WCHAR* domainString
+)
 {
 	::wcscpy_s(domainString, MAX_PATH, L"-");
 
@@ -251,6 +262,18 @@ void __stdcall ProcessMonitor::writeUsernameAndDomainOnError(WCHAR* userString, 
 	{
 		::wcscpy_s(userString, MAX_PATH, L"Idle/CSRSS");
 	}
+}
+
+bool _stdcall ProcessMonitor::getCounterStatistics(
+	double * workingSet,
+	double * workingSetPrivate,
+	double * io,
+	double * processorUsage,
+	double * elapsedTime
+) 
+{
+
+	return true;
 }
 
 

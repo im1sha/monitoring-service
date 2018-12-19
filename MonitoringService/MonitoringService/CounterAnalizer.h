@@ -17,6 +17,7 @@
 #include <string>
 #include <iostream>
 #include <utility>
+#include "Constants.h"
 
 #pragma comment(lib, "pdh.lib")
 
@@ -29,12 +30,12 @@ public:
 	bool __stdcall collectPerfomanceData(
 		std::vector<std::vector<double> >* values, 
 		std::vector<WCHAR*>* instances, 
-		DWORD collectInterval = 50, 
+		DWORD collectInterval = 10, 
 		size_t totalIntervals = 10
 	);
 
 private:
-	PDH_COUNTER_PATH_ELEMENTS * __stdcall getPathsToCpuCounter(
+	PDH_COUNTER_PATH_ELEMENTS * __stdcall getPathsToCounter(
 		WCHAR * machineName, std::vector<WCHAR*> instances
 	);
 
@@ -42,7 +43,7 @@ private:
 		PDH_COUNTER_PATH_ELEMENTS * cpe, 
 		const size_t cpeSize, 
 		std::vector<std::vector<double> >* resultValues, 
-		DWORD collectInterval = 50, 
+		DWORD collectInterval = 10, 
 		size_t totalIntervals = 10
 	);
 };
