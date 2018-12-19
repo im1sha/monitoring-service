@@ -17,6 +17,8 @@
 #include <string>
 #include <iostream>
 #include <utility>
+#include <algorithm>
+
 #include "Constants.h"
 
 #pragma comment(lib, "pdh.lib")
@@ -28,23 +30,28 @@ public:
 	~CounterAnalizer();
 
 	bool __stdcall collectPerfomanceData(
-		std::vector<std::vector<double> >* values, 
+		std::vector<const WCHAR*> counterNames,
+		std::vector<std::vector <std::vector<double> > > * values,
 		std::vector<WCHAR*>* instances, 
-		DWORD collectInterval = 10, 
-		size_t totalIntervals = 10
+		const DWORD collectInterval = 10, 
+		const size_t totalIntervals = 10
 	);
+
+	int __stdcall collectExample();
 
 private:
 	PDH_COUNTER_PATH_ELEMENTS * __stdcall getPathsToCounter(
-		WCHAR * machineName, std::vector<WCHAR*> instances
+		const WCHAR * machineName,
+		std::vector<WCHAR*> instances, // in format : Process(X)
+		const WCHAR* counterName
 	);
 
 	bool __stdcall getCounterValues(
 		PDH_COUNTER_PATH_ELEMENTS * cpe, 
 		const size_t cpeSize, 
 		std::vector<std::vector<double> >* resultValues, 
-		DWORD collectInterval = 10, 
-		size_t totalIntervals = 10
+		const DWORD collectInterval = 10,
+		const size_t totalIntervals = 10
 	);
 };
 

@@ -13,21 +13,19 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 )
 {
 	HANDLE currentThreadToken;
-	HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
-	
-	if (snapshotHandle == INVALID_HANDLE_VALUE)
-	{
-		return false;
-	}
 
-	PROCESSENTRY32 procEntry32;
-	procEntry32.dwSize = sizeof(PROCESSENTRY32);
-
-	if (!::Process32First(snapshotHandle, &procEntry32))
-	{
-		::CloseHandle(snapshotHandle);
-		return false;
-	}
+	//HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
+	//if (snapshotHandle == INVALID_HANDLE_VALUE)
+	//{
+	//	return false;
+	//}
+	//PROCESSENTRY32 procEntry32;
+	//procEntry32.dwSize = sizeof(PROCESSENTRY32);
+	//if (!::Process32First(snapshotHandle, &procEntry32))
+	//{
+	//	::CloseHandle(snapshotHandle);
+	//	return false;
+	//}
 
 	if (!::OpenThreadToken(::GetCurrentThread(), 
 		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
@@ -64,20 +62,21 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 		double io = 0;
 		double processorUsage = 0;
 		double elapsedTime = 0;
+		DWORD pid = 0;
 
-		this->getLogonDataByPid(procEntry32.th32ProcessID, 
-			userName, domainName);
+		//this->getLogonDataByPid(procEntry32.th32ProcessID, 
+		//	userName, domainName);
 
-		ProcessInfo pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
-			procEntry32.th32ParentProcessID, procEntry32.szExeFile, 
-			userName, domainName, workingSet, workingSetPrivate, 
-			io, processorUsage, elapsedTime);
+		//ProcessInfo pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
+		//	procEntry32.th32ParentProcessID, procEntry32.szExeFile, 
+		//	userName, domainName, workingSet, workingSetPrivate, 
+		//	io, processorUsage, elapsedTime);
 
-		processInfos->push_back(pe);
+		//processInfos->push_back(pe);
 
-	} while (::Process32Next(snapshotHandle, &procEntry32));
+	} while (true/*::Process32Next(snapshotHandle, &procEntry32)*/); // << CORRECT IT
 
-	::CloseHandle(snapshotHandle);
+	//::CloseHandle(snapshotHandle);
 
 	::RevertToSelf();
 

@@ -9,23 +9,31 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 	auto monitor = new ProcessMonitor();
 
 	std::vector<ProcessInfo> pi;
-	monitor->getProcessesInfo(&pi);
+	//monitor->getProcessesInfo(&pi);
 
-	std::sort(pi.begin(), pi.end());
+	//std::sort(pi.begin(), pi.end());
 
 	/*std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
 	{
 		return ::lstrcmpiW(left.fileName, right.fileName) < 0;
 	});*/
 
-	::printf("total IDS: %u\n\n", pi.size());
+	//::printf("total IDS: %u\n\n", pi.size());
 
-	for (ProcessInfo p : pi)
-	{
-		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  MEM %-5.1f\n", 
-			p.fileName, p.processId, p.parentProcessId, p.runThreads, 
-			p.userName, p.domainName, p.workingSet);
-	}
+	//for (ProcessInfo p : pi)
+	//{
+	//	::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  MEM %-5.1f\n", 
+	//		p.fileName, p.processId, p.parentProcessId, p.runThreads, 
+	//		p.userName, p.domainName, p.workingSet);
+	//}
+
+
+	CounterAnalizer * c = new CounterAnalizer();
+
+	c->collectExample();
+
+	delete c;
+
 	
 	::system("pause");
 	return 0;

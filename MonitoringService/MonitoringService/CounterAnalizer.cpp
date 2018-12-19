@@ -11,8 +11,9 @@ CounterAnalizer::~CounterAnalizer()
 
 
 PDH_COUNTER_PATH_ELEMENTS * __stdcall CounterAnalizer::getPathsToCounter(
-	WCHAR * machineName,
-	std::vector<WCHAR *> instances // in format : Process(X)
+	const WCHAR * machineName,
+	std::vector<WCHAR *> instances, // in format : Process(X)
+	const WCHAR * counterName
 )
 {
 	size_t totalInstances = instances.size();
@@ -21,8 +22,9 @@ PDH_COUNTER_PATH_ELEMENTS * __stdcall CounterAnalizer::getPathsToCounter(
 
 	for (size_t i = 0; i < totalInstances; i++)
 	{
-		//"\Process(X)\% Process Time"
-		cpe[i] = { machineName, (LPWSTR)instances[i], nullptr, nullptr, i, (LPWSTR)L"% Processor Time" };
+		// final formatting: "\Process(X)\% Processor Time"
+		//					"\Process(X#index)\% Processor Time"	
+		cpe[i] = { (LPWSTR)machineName, instances[i], nullptr, nullptr, i, (LPWSTR)counterName };
 	}
 
 	return cpe;
@@ -32,8 +34,8 @@ bool __stdcall CounterAnalizer::getCounterValues(
 	PDH_COUNTER_PATH_ELEMENTS * cpe,
 	const size_t cpeSize,
 	std::vector <std::vector<double> > * resultValues,
-	DWORD collectInterval,
-	size_t totalIntervals
+	const DWORD collectInterval,
+	const size_t totalIntervals
 )
 {
 	bool result = false;
@@ -106,14 +108,17 @@ bool __stdcall CounterAnalizer::getCounterValues(
 	return true;
 }
 
+/////////////
+
 bool __stdcall CounterAnalizer::collectPerfomanceData(
-	std::vector <std::vector<double> > * values,
+	std::vector<const WCHAR*> counterNames,
+	std::vector<std::vector<std::vector<double> > > * values, //  counter_vector< pid_vector < double_vector > >
 	std::vector <WCHAR*> * instances,
-	DWORD collectInterval,
-	size_t totalIntervals
+	const DWORD collectInterval,
+	const size_t totalIntervals
 )
 {
-	const WCHAR COUNTER_OBJECT[] = L"Process";
+	const WCHAR COUNTER_OBJECT_NAME[] = L"Process";
 
 	PDH_STATUS status = ERROR_SUCCESS;
 	LPWSTR counterListBuffer = nullptr;
@@ -121,7 +126,7 @@ bool __stdcall CounterAnalizer::collectPerfomanceData(
 	LPWSTR instanceListBuffer = nullptr;
 	DWORD instanceListSize = 0;
 
-	status = ::PdhEnumObjectItems(nullptr, nullptr, COUNTER_OBJECT,
+	status = ::PdhEnumObjectItems(nullptr, nullptr, COUNTER_OBJECT_NAME,
 		counterListBuffer, &counterListSize, instanceListBuffer,
 		&instanceListSize, PERF_DETAIL_WIZARD, 0);
 
@@ -132,7 +137,7 @@ bool __stdcall CounterAnalizer::collectPerfomanceData(
 
 		if ((nullptr != counterListBuffer) && (nullptr != instanceListBuffer))
 		{
-			status = ::PdhEnumObjectItems(nullptr, nullptr, COUNTER_OBJECT,
+			status = ::PdhEnumObjectItems(nullptr, nullptr, COUNTER_OBJECT_NAME,
 				counterListBuffer, &counterListSize, instanceListBuffer,
 				&instanceListSize, PERF_DETAIL_WIZARD, 0);
 
@@ -151,9 +156,15 @@ bool __stdcall CounterAnalizer::collectPerfomanceData(
 					instances->push_back(instance);
 				}
 
-				PDH_COUNTER_PATH_ELEMENTS* pcpe = getPathsToCounter(nullptr, *instances);
+				for (size_t i = 0; i < counterNames.size(); i++)
+				{
+					values->push_back(std::vector<std::vector<double> >());
 
-				getCounterValues(pcpe, instances->size(), values);
+					PDH_COUNTER_PATH_ELEMENTS* pcpe = 
+						this->getPathsToCounter(nullptr, *instances, counterNames[i]);
+
+					this->getCounterValues(pcpe, instances->size(), &((*values)[i]));
+				}
 			}
 		}
 		else
@@ -174,26 +185,45 @@ bool __stdcall CounterAnalizer::collectPerfomanceData(
 	return true;
 }
 
-//int WINAPI collectExample()
-//{
-//	std::vector <std::vector<double> > * values = new std::vector<std::vector<double> >();
-//	std::vector <WCHAR*> * processes = new std::vector <WCHAR*>();
-//
-//	collectPerfomanceData(values, processes);
-//	size_t size = values->size();
-//
-//	delete values;
-//
-//	for (size_t i = 0; i < size; i++)
-//	{
-//		delete[](*processes)[i];
-//	}
-//
-//	delete processes;
-//
-//	::system("pause");
-//
-//	return 0;
-//}
+int __stdcall CounterAnalizer::collectExample()
+{
+	std::vector<std::vector <std::vector<double> > > * values = new std::vector<std::vector<std::vector<double> > >();
+	std::vector <WCHAR*> * processNames = new std::vector <WCHAR*>();
+	std::vector <const WCHAR *> counters;
+	counters.push_back(COUNTER_PROCESSOR_TIME_PERCENT);
+	counters.push_back(COUNTER_PROCESS_ID);
+	counters.push_back(COUNTER_ELAPSED_TIME);
+	counters.push_back(COUNTER_IO_DATA_BYTES_IN_SEC);
+	counters.push_back(COUNTER_WORKING_SET);
+	counters.push_back(COUNTER_WORKING_SET_PRIVATE);
+
+	this->collectPerfomanceData(counters, values, processNames);
+
+	size_t size = values->size();
+	std::vector<long long> ttt;
+	for (size_t i = 0; i < (*values)[1].size(); i++) //  counter_vector< pid_vector < double_vector > >
+	{
+		ttt.push_back((*values)[1][i][0]);
+	}
+	std::sort(ttt.begin(), ttt.end());
+
+	for (auto i: ttt) //  counter_vector< pid_vector < double_vector > >
+	{
+		printf("%lli\n", i);
+	}
+
+	delete values;
+
+	for (size_t i = 0; i < size; i++)
+	{
+		delete[](*processNames)[i];
+	}
+
+	delete processNames;
+
+	::system("pause");
+
+	return 0;
+}
 
 
