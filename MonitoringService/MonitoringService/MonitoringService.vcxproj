@@ -119,12 +119,16 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ProcessInfo.cpp" />
     <ClCompile Include="ProcessMonitor.cpp" />
+    <ClCompile Include="Table.cpp" />
+    <ClCompile Include="Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Constants.h" />
     <ClInclude Include="CountersAnalizer.h" />
     <ClInclude Include="ProcessInfo.h" />
     <ClInclude Include="ProcessMonitor.h" />
+    <ClInclude Include="Table.h" />
+    <ClInclude Include="Window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

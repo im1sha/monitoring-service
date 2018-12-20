@@ -22,12 +22,15 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 	std::vector<double> elapsedTime;
 	std::vector<std::wstring> processNames;
 
+
+	
 	CountersAnalizer * c = new CountersAnalizer();
 	c->getAveragePerfomance(&pids, &ppids, &threadCounts,
 		&workingSet, &workingSetPrivate, &io,
 		&processorUsage, &elapsedTime,
 		&processNames);
 	delete c;
+
 
 	HANDLE currentThreadToken;
 
@@ -66,8 +69,9 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 
 		ProcessInfo pi(
 			pids[i], threadCounts[i], ppids[i], processNames[i].c_str(),
-			userName, domainName, workingSet[i], workingSetPrivate[i],
-			io[i], processorUsage[i], elapsedTime[i]
+			userName, domainName, workingSet[i] / MB_TO_BYTE, 
+			workingSetPrivate[i] / MB_TO_BYTE, io[i], 
+			processorUsage[i], elapsedTime[i]
 		);
 
 		processInfos->push_back(pi);

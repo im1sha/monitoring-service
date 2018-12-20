@@ -7,8 +7,8 @@ ProcessInfo::ProcessInfo(
 	const WCHAR* fileName,
 	const WCHAR* userName,
 	const WCHAR* domainName,
-	double workingSet,
-	double workingSetPrivate,
+	double workingSetInMb,
+	double workingSetPrivateInMb,
 	double io,
 	double processorUsage,
 	double elapsedTime
@@ -20,8 +20,8 @@ ProcessInfo::ProcessInfo(
 	::wcscpy_s(this->fileName, MAX_PATH, fileName);
 	::wcscpy_s(this->userName, MAX_PATH, userName);
 	::wcscpy_s(this->domainName, MAX_PATH, domainName);
-	this->workingSet = workingSet;
-	this->workingSetPrivate = workingSetPrivate;
+	this->workingSetInMb = workingSetInMb;
+	this->workingSetPrivateInMb = workingSetPrivateInMb;
 	this->io = io;
 	this->processorUsage = processorUsage;
 	this->elapsedTime = elapsedTime;

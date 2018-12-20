@@ -163,10 +163,9 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 				// getting process list
 				for (WCHAR * i = instanceListBuffer; *i != 0; i += wcslen(i) + 1)
 				{
-					WCHAR *process = new WCHAR[MAX_PATH] { };
-					wcscpy_s(process, MAX_PATH, i);
-					processes->push_back(std::wstring(process));
-					delete[] process;
+
+					processes->push_back(std::wstring(i));
+
 				}
 		
 				std::sort(processes->begin(), processes->end());
@@ -274,7 +273,7 @@ std::vector<double> __stdcall CountersAnalizer::normalizeVector(
 			values[i] *= normalizeMultiplier;
 		}
 	}
-
+	values[totalPosition] = 100;
 	return values;
 }
 

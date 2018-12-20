@@ -27,7 +27,7 @@ public:
 	bool __stdcall getProcessesInfo(
 		std::vector<ProcessInfo> * processInfos
 	);
-
+	
 private:
 	bool __stdcall getLogonDataFromToken(
 		HANDLE token, 
@@ -45,8 +45,6 @@ private:
 		WCHAR* domainString
 	);
 
-	//bool __stdcall getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb);
-
 	bool __stdcall setPrivilege(
 		HANDLE token,
 		const WCHAR * privilege, 
@@ -58,5 +56,6 @@ private:
 		WCHAR * domainString
 	);
 
+	const double MB_TO_BYTE = 1048576.0;
 };
 
