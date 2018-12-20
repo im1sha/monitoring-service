@@ -1,3 +1,4 @@
+/*
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -15,23 +16,14 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 
 	
 
-	/*
-	std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
-	{
-		return ::lstrcmpiW(left.fileName, right.fileName) < 0;
-	});
-	*/
+	
+	//std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
+	//{
+	//	return ::lstrcmpiW(left.fileName, right.fileName) < 0;
+	//});
+	
 
-	/*ProcessInfo::ProcessInfo(
-		DWORD processId,
-		DWORD runThreads,
-		DWORD parentProcessId,
-		double workingSet,
-		double workingSetPrivate,
-		double io,
-		double processorUsage,
-		double elapsedTime
-	)*/
+
 	//for (ProcessInfo p : pi)
 		//{
 		//	::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  WS %-10.0f WSP %-10.0f IO %-5.0f CPU %-5.2f TIM %-10.0f\n", 
@@ -45,8 +37,8 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 		bool res =monitor->getProcessesInfo(&pi);
 		std::sort(pi.begin(), pi.end());
 		::printf("\n\n========================================================================\n\n");	
-		/*wprintf(L"%s %f\n", (pi)[0].fileName, (pi)[0].processorUsage);
-		wprintf(L"%s %f\n\n", (pi)[1].fileName, (pi)[1].processorUsage);*/
+		//wprintf(L"%s %f\n", (pi)[0].fileName, (pi)[0].processorUsage);
+		//wprintf(L"%s %f\n\n", (pi)[1].fileName, (pi)[1].processorUsage);
 		printf("TOTAL PROCESSES %i %i \n\n", pi.size(), res?1:0);
 
 		for (ProcessInfo p : pi)
@@ -84,9 +76,7 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 	//delete c;
 
 
-	/*DWORD now2 = GetTickCount();
-
-	printf("TOTAL: %lu\n", now2 - now1);*/
+	
 	::system("pause");
 	return 0;
 }
@@ -133,3 +123,5 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 //}
 //
 //
+
+*/
