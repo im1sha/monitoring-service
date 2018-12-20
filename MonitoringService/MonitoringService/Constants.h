@@ -4,9 +4,7 @@
 #define UNICODE
 #endif // !UNICODE
 
-
 #include <wchar.h>
-
 
 const wchar_t COUNTER_PROCESSOR_TIME_PERCENT[17] = L"% Processor Time";
 const wchar_t COUNTER_PROCESS_ID[11] = L"ID Process";
@@ -21,4 +19,5 @@ const wchar_t PROCESS_IDLE[5] = L"Idle";
 const wchar_t PROCESS_TOTAL[7] = L"_Total";
 
 #define DEFAULT_SPIN_COUNT 4000
+#define DEFAULT_TIMEOUT 500
 

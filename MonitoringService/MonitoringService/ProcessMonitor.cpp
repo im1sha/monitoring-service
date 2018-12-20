@@ -2,10 +2,78 @@
 
 ProcessMonitor::ProcessMonitor()
 {
+	section_ = new CRITICAL_SECTION();
+	::InitializeCriticalSectionAndSpinCount(section_, DEFAULT_SPIN_COUNT);
 }
 
 ProcessMonitor::~ProcessMonitor()
 {
+	if (section_ != nullptr)
+	{
+		::DeleteCriticalSection(section_);
+		delete section_;
+	}
+
+	while (isRunning())
+	{
+		::Sleep(1);
+	}
+}
+
+void __stdcall ProcessMonitor::runAsBackground()
+{
+	::EnterCriticalSection(section_);
+	running_ = true;
+	beginThread();
+	::LeaveCriticalSection(section_);
+}	
+
+void __stdcall ProcessMonitor::shutdown()
+{
+	::EnterCriticalSection(section_);
+	running_ = false;
+	::LeaveCriticalSection(section_);
+}
+
+void __stdcall ProcessMonitor::setPerfomanceData(std::vector<ProcessInfo> pi)
+{
+	::EnterCriticalSection(section_);
+	perfomanceInfo_ = pi;
+	::LeaveCriticalSection(section_);
+}
+
+void __stdcall ProcessMonitor::keepTracking(ProcessMonitor * monitor)
+{
+	while (monitor->isRunning())
+	{
+		std::vector<ProcessInfo> pi;
+		monitor->getProcessesInfo(&pi);
+		std::sort(pi.begin(), pi.end());
+		monitor->setPerfomanceData(pi);
+		::Sleep(DEFAULT_TIMEOUT);
+	}
+}
+
+void __stdcall ProcessMonitor::beginThread()
+{
+	thread_ = (HANDLE)0L;
+
+	while (thread_ == (HANDLE)0L)
+	{
+		thread_ = (HANDLE) ::_beginthreadex(nullptr, 0,
+			(_beginthreadex_proc_type)ProcessMonitor::keepTracking,
+			(void *)this, 0, nullptr);
+		::Sleep(1);
+	}
+}
+
+std::vector<ProcessInfo> __stdcall ProcessMonitor::getPerfomanceData()
+{
+	std::vector<ProcessInfo> result;
+	::EnterCriticalSection(section_);
+	result = perfomanceInfo_;
+	::LeaveCriticalSection(section_);
+	return result;
 }
 
 bool __stdcall ProcessMonitor::getProcessesInfo(
@@ -185,24 +253,6 @@ bool __stdcall ProcessMonitor::getLogonDataByPid(
 	return result;
 }
 
-//bool __stdcall ProcessMonitor::getPrivateUsage(HANDLE hProcess, long long * memoryUsageInMb)
-//{
-//	bool result = false;
-//
-//	const long long bytesInMb = (long long)1024 * 1024;
-//
-//	PROCESS_MEMORY_COUNTERS_EX pmc;
-//	pmc.cb = sizeof(PROCESS_MEMORY_COUNTERS_EX);
-//
-//	if (::GetProcessMemoryInfo(hProcess, (PPROCESS_MEMORY_COUNTERS)&pmc, sizeof(pmc)))
-//	{
-//		*memoryUsageInMb = (long long)pmc.PrivateUsage / bytesInMb;
-//		result = true;
-//	}
-//
-//	return result;
-//}
-
 bool __stdcall ProcessMonitor::setPrivilege(
 	HANDLE token,				// access token handle
 	const WCHAR * privilege,	// name of privilege to enable/disable
@@ -261,37 +311,17 @@ void __stdcall ProcessMonitor::writeLogonDataOnError(
 	}
 }
 
+bool __stdcall ProcessMonitor::isRunning()
+{
+	bool result = false;
+	::EnterCriticalSection(section_);
+	result = running_;
+	::LeaveCriticalSection(section_);
+	return result;
+}
 
 
-//float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)
-//{
-//	static unsigned long long _previousTotalTicks = 0;
-//	static unsigned long long _previousIdleTicks = 0;
-//
-//	unsigned long long totalTicksSinceLastTime = totalTicks - _previousTotalTicks;
-//	unsigned long long idleTicksSinceLastTime = idleTicks - _previousIdleTicks;
-//
-//	float ret = 1.0f - ((totalTicksSinceLastTime > 0) ? ((float)idleTicksSinceLastTime) / totalTicksSinceLastTime : 0);
-//
-//	_previousTotalTicks = totalTicks;
-//	_previousIdleTicks = idleTicks;
-//	return ret;
-//}
-//
-//unsigned long long FileTimeToInt64(const FILETIME & ft) 
-//{ 
-//	return (((unsigned long long)(ft.dwHighDateTime)) << 32) | ((unsigned long long)ft.dwLowDateTime);
-//}
-//
-//// Returns 1.0f for "CPU fully pinned", 0.0f for "CPU idle", or somewhere in between
-//// You'll need to call this at regular intervals, since it measures the load between
-//// the previous call and the current one.  Returns -1.0 on error.
-//float GetCPULoad()
-//{
-//	FILETIME idleTime, kernelTime, userTime;
-//	return GetSystemTimes(&idleTime, &kernelTime, &userTime) ? CalculateCPULoad(FileTimeToInt64(idleTime), FileTimeToInt64(kernelTime) + FileTimeToInt64(userTime)) : -1.0f;
-//}
-//
+
 
 
 

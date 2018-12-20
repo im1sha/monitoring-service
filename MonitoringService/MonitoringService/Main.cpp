@@ -10,6 +10,8 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 {
 	auto monitor = new ProcessMonitor();
 
+	monitor->runAsBackground();
+
 	std::vector<ProcessInfo> pi;
 
 	//DWORD now1 = GetTickCount();
@@ -31,15 +33,14 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 		//		p.userName, p.domainName, p.workingSetInMb, p.workingSetPrivateInMb, p.io, p.processorUsage, p.elapsedTime);
 		//}
 
-	for (size_t i = 0; i < 200; i++)
+	for (size_t i = 0; i < 10; i++)
 	{	
-		pi = std::vector<ProcessInfo>();
-		bool res =monitor->getProcessesInfo(&pi);
-		std::sort(pi.begin(), pi.end());
+		pi = monitor->getPerfomanceData();
+
 		::printf("\n\n========================================================================\n\n");	
 		//wprintf(L"%s %f\n", (pi)[0].fileName, (pi)[0].processorUsage);
 		//wprintf(L"%s %f\n\n", (pi)[1].fileName, (pi)[1].processorUsage);
-		printf("TOTAL PROCESSES %i %i \n\n", pi.size(), res?1:0);
+		printf("TOTAL PROCESSES %i %i \n\n", pi.size(), pi.size() > 0 ?1:0);
 
 		for (ProcessInfo p : pi)
 		{
@@ -47,6 +48,8 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 				p.fileName, p.processId, p.parentProcessId, p.runThreads, 
 				p.userName, p.domainName, p.workingSetInMb, p.workingSetPrivateInMb, p.io, p.processorUsage, p.elapsedTime);
 		}
+
+		::Sleep(1000);
 
 	}
 
@@ -75,7 +78,7 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 	//delete processNames;
 	//delete c;
 
-
+	monitor->shutdown();
 	
 	::system("pause");
 	return 0;
