@@ -10,11 +10,12 @@
 #include <vector>
 #include <iostream>
 #include <math.h>
+#include "ProcessMonitor.h"
 
 class SpreadSheet {
 public:
 
-	SpreadSheet(HWND hWnd);
+	SpreadSheet(HWND hWnd, ProcessMonitor* monitor);
 	~SpreadSheet();
 
 	static const int MAX_CELLS = 81;
@@ -32,6 +33,8 @@ private:
 
 	HWND hWnd_ = nullptr; // associated HWND
 	HDC hDC_ = nullptr; // device context
+
+	ProcessMonitor * monitor_ = nullptr;
 
 	WCHAR** tableStrings_ = nullptr;
 	std::vector<std::vector<int> > wordsLenghts_;

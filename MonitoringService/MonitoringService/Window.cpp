@@ -5,14 +5,19 @@ Window::Window(HINSTANCE hInstance, int nCmdShow)
 	this->hInstance_ = hInstance;
 	HWND hWnd = this->initialize(hInstance, nCmdShow);
 	this->hWnd_ = hWnd;
-	this->spreadSheet_ = new SpreadSheet(hWnd);
+	this->monitor_ = new ProcessMonitor();
+	this->spreadSheet_ = new SpreadSheet(hWnd, this->monitor_);
 }
 
 Window::~Window()
 {
 	if (spreadSheet_ != nullptr)
 	{
-		delete spreadSheet_;
+		delete this->spreadSheet_;
+	}
+	if (monitor_ != nullptr)
+	{
+		delete this->monitor_;
 	}
 }
 

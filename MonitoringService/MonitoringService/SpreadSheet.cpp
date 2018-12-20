@@ -2,9 +2,10 @@
 
 #include "SpreadSheet.h"
 
-SpreadSheet::SpreadSheet(HWND hWnd)
+SpreadSheet::SpreadSheet(HWND hWnd, ProcessMonitor* monitor)
 {
 	this->hWnd_ = hWnd;
+	this->monitor_ = monitor;
 }
 
 SpreadSheet::~SpreadSheet()

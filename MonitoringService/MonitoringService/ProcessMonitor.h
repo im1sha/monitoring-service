@@ -29,6 +29,8 @@ public:
 	);
 	
 private:
+
+
 	bool __stdcall getLogonDataFromToken(
 		HANDLE token, 
 		WCHAR* userString,

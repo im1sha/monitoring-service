@@ -401,8 +401,8 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 		COUNTER_THREAD_COUNT			// 7
 	};
 
-	const DWORD defaultInterval = 1;
-	const size_t defaultIntervalTotal = 50;
+	const DWORD defaultInterval = 10;
+	const size_t defaultIntervalTotal = 10;
 
 	std::vector<size_t> totalIntervals{
 		defaultIntervalTotal, 1, 1, defaultIntervalTotal, 1, 1, 1, 1

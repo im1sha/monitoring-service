@@ -24,7 +24,7 @@ private:
 	// values which identify hWnd_ 
 	const WCHAR DEFAULT_CLASS_NAME[17] = L"SpreadSheetClass";
 	const WCHAR DEFAULT_WINDOW_NAME[12] = L"SpreadSheet";
-	const POINT DEFAULT_WINDOW_WIDTH_HEIGHT = { 1700, 900 };
+	const POINT DEFAULT_WINDOW_WIDTH_HEIGHT = { 1600, 900 };
 
 	SpreadSheet* spreadSheet_ = nullptr;
 	ProcessMonitor* monitor_ = nullptr;
