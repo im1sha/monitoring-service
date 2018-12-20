@@ -23,23 +23,35 @@
 
 #pragma comment(lib, "pdh.lib")
 
-class CounterAnalizer
+class CountersAnalizer
 {
 public:
-	CounterAnalizer();
-	~CounterAnalizer();
+	CountersAnalizer();
+	~CountersAnalizer();
+	bool __stdcall getAveragePerfomance(
+		std::vector<DWORD>* pids,
+		std::vector<DWORD>* ppids,
+		std::vector<DWORD>* threadCounts,
+		std::vector<double>* workingSet,
+		std::vector<double>* workingSetPrivate,
+		std::vector<double>* io,
+		std::vector<double>* processorUsage,
+		std::vector<double>* elapsedTime,
+		std::vector<std::wstring>* processName
+	);
+
+private:
 
 	bool __stdcall collectPerfomanceData(
 		std::vector<const WCHAR*> counterNames,
 		std::vector<std::vector <std::vector<double> > > * values,
-		std::vector<WCHAR*>* instances, 
-		const DWORD collectInterval = 10, 
-		const size_t totalIntervals = 10
+		std::vector<std::wstring>* processesNames,
+		std::vector<size_t> totalIntervals,
+		std::vector<DWORD> collectIntervals		
 	);
 
-	int __stdcall collectExample();
-
-private:
+	double __stdcall getAverage(std::vector<double> values);
+	
 	PDH_COUNTER_PATH_ELEMENTS * __stdcall getPathsToCounter(
 		const WCHAR * machineName,
 		std::vector<WCHAR*> instances, // in format : Process(X)
@@ -50,8 +62,8 @@ private:
 		PDH_COUNTER_PATH_ELEMENTS * cpe, 
 		const size_t cpeSize, 
 		std::vector<std::vector<double> >* resultValues, 
-		const DWORD collectInterval = 10,
-		const size_t totalIntervals = 10
+		const size_t totalIntervals = 10,
+		const DWORD collectInterval = 10		
 	);
 };
 

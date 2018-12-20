@@ -115,14 +115,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="CounterAnalizer.cpp" />
+    <ClCompile Include="CountersAnalizer.cpp" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ProcessInfo.cpp" />
     <ClCompile Include="ProcessMonitor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Constants.h" />
-    <ClInclude Include="CounterAnalizer.h" />
+    <ClInclude Include="CountersAnalizer.h" />
     <ClInclude Include="ProcessInfo.h" />
     <ClInclude Include="ProcessMonitor.h" />
   </ItemGroup>

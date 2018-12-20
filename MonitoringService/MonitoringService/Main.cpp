@@ -28,13 +28,35 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 	//}
 
 
-	CounterAnalizer * c = new CounterAnalizer();
+	CountersAnalizer * c = new CountersAnalizer();
 
-	c->collectExample();
+	std::vector<DWORD>* pids = new std::vector<DWORD>();
+	std::vector<DWORD>* ppids = new std::vector<DWORD>();
+	std::vector<DWORD>* threadCounts = new std::vector<DWORD>();
+	std::vector<double>* workingSet = new std::vector<double>();
+	std::vector<double>* workingSetPrivate = new std::vector<double>();
+	std::vector<double>* io = new std::vector<double>();
+	std::vector<double>* processorUsage = new std::vector<double>();
+	std::vector<double>* elapsedTime = new std::vector<double>();
+
+	std::vector<std::wstring>* processNames = new std::vector<std::wstring>();
+	c->getAveragePerfomance(pids, ppids, threadCounts, 
+		workingSet, workingSetPrivate, io, 
+		processorUsage, elapsedTime,
+		processNames);
+
+	delete pids; 
+	delete ppids; 
+	delete threadCounts; 
+	delete workingSet; 
+	delete workingSetPrivate; 
+	delete io; 
+	delete processorUsage; 
+	delete elapsedTime; 
+	delete processNames;
 
 	delete c;
 
-	
 	::system("pause");
 	return 0;
 }

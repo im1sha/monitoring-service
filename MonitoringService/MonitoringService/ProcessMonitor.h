@@ -16,7 +16,7 @@
 #pragma comment(lib, "advapi32.lib")
 
 #include "ProcessInfo.h"
-#include "CounterAnalizer.h"
+#include "CountersAnalizer.h"
 
 class ProcessMonitor
 {

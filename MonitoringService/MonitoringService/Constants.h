@@ -14,4 +14,6 @@ const wchar_t COUNTER_ELAPSED_TIME[13] = L"Elapsed Time";
 const wchar_t COUNTER_IO_DATA_BYTES_IN_SEC[18] = L"IO Data Bytes/sec";
 const wchar_t COUNTER_WORKING_SET[12] = L"Working Set";
 const wchar_t COUNTER_WORKING_SET_PRIVATE[22] = L"Working Set - Private";
+const wchar_t COUNTER_PPID[20] = L"Creating Process ID";
+const wchar_t COUNTER_THREAD_COUNT[13] = L"Thread Count";
 

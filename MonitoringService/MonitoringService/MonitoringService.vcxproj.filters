@@ -21,10 +21,10 @@
     <ClCompile Include="ProcessMonitor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CounterAnalizer.cpp">
+    <ClCompile Include="ProcessInfo.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ProcessInfo.cpp">
+    <ClCompile Include="CountersAnalizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -32,13 +32,13 @@
     <ClInclude Include="ProcessMonitor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CounterAnalizer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Constants.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ProcessInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CountersAnalizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
