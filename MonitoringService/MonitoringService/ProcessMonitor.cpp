@@ -12,51 +12,24 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 	std::vector<ProcessInfo> * processInfos
 )
 {
-	/*CountersAnalizer * c = new CountersAnalizer();
+	std::vector<DWORD> pids;
+	std::vector<DWORD> ppids;
+	std::vector<DWORD> threadCounts;
+	std::vector<double> workingSet;
+	std::vector<double> workingSetPrivate;
+	std::vector<double> io;
+	std::vector<double> processorUsage;
+	std::vector<double> elapsedTime;
+	std::vector<std::wstring> processNames;
 
-	std::vector<DWORD>* pids = new std::vector<DWORD>();
-	std::vector<DWORD>* ppids = new std::vector<DWORD>();
-	std::vector<DWORD>* threadCounts = new std::vector<DWORD>();
-	std::vector<double>* workingSet = new std::vector<double>();
-	std::vector<double>* workingSetPrivate = new std::vector<double>();
-	std::vector<double>* io = new std::vector<double>();
-	std::vector<double>* processorUsage = new std::vector<double>();
-	std::vector<double>* elapsedTime = new std::vector<double>();
-
-	std::vector<std::wstring>* processNames = new std::vector<std::wstring>();
-	c->getAveragePerfomance(pids, ppids, threadCounts,
-		workingSet, workingSetPrivate, io,
-		processorUsage, elapsedTime,
-		processNames);
-
-	delete pids;
-	delete ppids;
-	delete threadCounts;
-	delete workingSet;
-	delete workingSetPrivate;
-	delete io;
-	delete processorUsage;
-	delete elapsedTime;
-	delete processNames;
-
-	delete c;*/
-
-
+	CountersAnalizer * c = new CountersAnalizer();
+	c->getAveragePerfomance(&pids, &ppids, &threadCounts,
+		&workingSet, &workingSetPrivate, &io,
+		&processorUsage, &elapsedTime,
+		&processNames);
+	delete c;
 
 	HANDLE currentThreadToken;
-
-	//HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
-	//if (snapshotHandle == INVALID_HANDLE_VALUE)
-	//{
-	//	return false;
-	//}
-	//PROCESSENTRY32 procEntry32;
-	//procEntry32.dwSize = sizeof(PROCESSENTRY32);
-	//if (!::Process32First(snapshotHandle, &procEntry32))
-	//{
-	//	::CloseHandle(snapshotHandle);
-	//	return false;
-	//}
 
 	if (!::OpenThreadToken(::GetCurrentThread(), 
 		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY,
@@ -83,36 +56,29 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 
 	this->setPrivilege(currentThreadToken, SE_DEBUG_NAME, TRUE);
 
-	do
-	{		
-		WCHAR userName[MAX_PATH] { };
-		WCHAR domainName[MAX_PATH] { };
+	for (size_t i = 0; i < pids.size(); i++)
+	{
+		WCHAR userName[MAX_PATH]{ };
+		WCHAR domainName[MAX_PATH]{ };
 
-		double workingSet = 0;
-		double workingSetPrivate = 0;
-		double io = 0;
-		double processorUsage = 0;
-		double elapsedTime = 0;
-		DWORD pid = 0;
+		this->getLogonDataByPid(pids[i],
+			userName, domainName);
 
-		//this->getLogonDataByPid(procEntry32.th32ProcessID, 
-		//	userName, domainName);
+		ProcessInfo pi(
+			pids[i], threadCounts[i], ppids[i], processNames[i].c_str(),
+			userName, domainName, workingSet[i], workingSetPrivate[i],
+			io[i], processorUsage[i], elapsedTime[i]
+		);
 
-		//ProcessInfo pe(procEntry32.th32ProcessID, procEntry32.cntThreads,
-		//	procEntry32.th32ParentProcessID, procEntry32.szExeFile, 
-		//	userName, domainName, workingSet, workingSetPrivate, 
-		//	io, processorUsage, elapsedTime);
-
-		//processInfos->push_back(pe);
-
-	} while (true/*::Process32Next(snapshotHandle, &procEntry32)*/); // << CORRECT IT
-
-	//::CloseHandle(snapshotHandle);
+		processInfos->push_back(pi);
+	}
 
 	::RevertToSelf();
 
 	return true;
 }
+
+
 
 bool __stdcall ProcessMonitor::getLogonDataFromToken(
 	HANDLE token,
@@ -294,17 +260,6 @@ void __stdcall ProcessMonitor::writeLogonDataOnError(
 	}
 }
 
-bool __stdcall ProcessMonitor::getCounterStatistics(
-	double * workingSet,
-	double * workingSetPrivate,
-	double * io,
-	double * processorUsage,
-	double * elapsedTime
-) 
-{
-
-	return true;
-}
 
 
 //float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)

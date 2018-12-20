@@ -9,53 +9,61 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 	auto monitor = new ProcessMonitor();
 
 	std::vector<ProcessInfo> pi;
-	//monitor->getProcessesInfo(&pi);
 
-	//std::sort(pi.begin(), pi.end());
+	monitor->getProcessesInfo(&pi);
+	std::sort(pi.begin(), pi.end());
 
-	/*std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
+	/*
+	std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
 	{
 		return ::lstrcmpiW(left.fileName, right.fileName) < 0;
-	});*/
+	});
+	*/
 
-	//::printf("total IDS: %u\n\n", pi.size());
+	/*ProcessInfo::ProcessInfo(
+		DWORD processId,
+		DWORD runThreads,
+		DWORD parentProcessId,
+		double workingSet,
+		double workingSetPrivate,
+		double io,
+		double processorUsage,
+		double elapsedTime
+	)*/
 
-	//for (ProcessInfo p : pi)
-	//{
-	//	::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  MEM %-5.1f\n", 
-	//		p.fileName, p.processId, p.parentProcessId, p.runThreads, 
-	//		p.userName, p.domainName, p.workingSet);
-	//}
+	::printf("total IDS: %u\n\n", pi.size());
+	for (ProcessInfo p : pi)
+	{
+		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  WS %-10.0f WSP %-10.0f IO %-5.0f CPU %-7.2f TIM %-10.0f\n", 
+			p.fileName, p.processId, p.parentProcessId, p.runThreads, 
+			p.userName, p.domainName, p.workingSet, p.workingSetPrivate, p.io, p.processorUsage, p.elapsedTime);
+	}
 
 
-	CountersAnalizer * c = new CountersAnalizer();
-
-	std::vector<DWORD>* pids = new std::vector<DWORD>();
-	std::vector<DWORD>* ppids = new std::vector<DWORD>();
-	std::vector<DWORD>* threadCounts = new std::vector<DWORD>();
-	std::vector<double>* workingSet = new std::vector<double>();
-	std::vector<double>* workingSetPrivate = new std::vector<double>();
-	std::vector<double>* io = new std::vector<double>();
-	std::vector<double>* processorUsage = new std::vector<double>();
-	std::vector<double>* elapsedTime = new std::vector<double>();
-
-	std::vector<std::wstring>* processNames = new std::vector<std::wstring>();
-	c->getAveragePerfomance(pids, ppids, threadCounts,
-		workingSet, workingSetPrivate, io,
-		processorUsage, elapsedTime,
-		processNames);
-
-	delete pids;
-	delete ppids;
-	delete threadCounts;
-	delete workingSet;
-	delete workingSetPrivate;
-	delete io;
-	delete processorUsage;
-	delete elapsedTime;
-	delete processNames;
-
-	delete c;
+	//CountersAnalizer * c = new CountersAnalizer();
+	//std::vector<DWORD>* pids = new std::vector<DWORD>();
+	//std::vector<DWORD>* ppids = new std::vector<DWORD>();
+	//std::vector<DWORD>* threadCounts = new std::vector<DWORD>();
+	//std::vector<double>* workingSet = new std::vector<double>();
+	//std::vector<double>* workingSetPrivate = new std::vector<double>();
+	//std::vector<double>* io = new std::vector<double>();
+	//std::vector<double>* processorUsage = new std::vector<double>();
+	//std::vector<double>* elapsedTime = new std::vector<double>();
+	//std::vector<std::wstring>* processNames = new std::vector<std::wstring>();
+	//c->getAveragePerfomance(pids, ppids, threadCounts,
+	//	workingSet, workingSetPrivate, io,
+	//	processorUsage, elapsedTime,
+	//	processNames);
+	//delete pids;
+	//delete ppids;
+	//delete threadCounts;
+	//delete workingSet;
+	//delete workingSetPrivate;
+	//delete io;
+	//delete processorUsage;
+	//delete elapsedTime;
+	//delete processNames;
+	//delete c;
 
 
 	::system("pause");

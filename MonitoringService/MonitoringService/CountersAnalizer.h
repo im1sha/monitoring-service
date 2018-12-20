@@ -65,7 +65,7 @@ private:
 	
 	PDH_COUNTER_PATH_ELEMENTS * __stdcall getPathsToCounter(
 		const WCHAR * machineName,
-		std::vector<WCHAR*> instances, // in format : Process(X)
+		std::vector<WCHAR*> instances, 
 		const WCHAR* counterName
 	);
 

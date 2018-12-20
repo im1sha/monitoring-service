@@ -58,12 +58,5 @@ private:
 		WCHAR * domainString
 	);
 
-	bool __stdcall getCounterStatistics(
-		double * workingSet,
-		double * workingSetPrivate,
-		double * io,
-		double * processorUsage,
-		double * elapsedTime
-	);
 };
 

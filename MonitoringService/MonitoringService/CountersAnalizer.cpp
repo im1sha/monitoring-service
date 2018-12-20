@@ -239,6 +239,19 @@ std::vector<double> __stdcall CountersAnalizer::normalizeVector(
 	size_t totalPosition
 ) 
 {
+	if (values.size() == 0)
+	{
+		throw std::invalid_argument("empty vector passed");
+	}
+	if ((idlePosition > values.size() - 1) || idlePosition < 0)
+	{
+		throw std::invalid_argument("idlePosition is out of range");
+	}
+	if ((totalPosition > values.size() - 1) || totalPosition < 0)
+	{
+		throw std::invalid_argument("totalPosition is out of range");
+	}
+	
 	double idleValue = values[idlePosition];
 	double totalValue = values[totalPosition];
 
@@ -292,6 +305,38 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 	std::vector<std::wstring>* processNames
 ) 
 {
+	if (pids == nullptr)
+	{
+		throw std::invalid_argument("pids == nullptr");
+	}
+	if (ppids == nullptr)
+	{
+		throw std::invalid_argument("ppids == nullptr");
+	}
+	if (threadCounts == nullptr)
+	{
+		throw std::invalid_argument("threadCounts == nullptr");
+	}
+	if (workingSet == nullptr)
+	{
+		throw std::invalid_argument("workingSet == nullptr");
+	}
+	if (workingSetPrivate == nullptr)
+	{
+		throw std::invalid_argument("workingSetPrivate == nullptr");
+	}
+	if (io == nullptr)
+	{
+		throw std::invalid_argument("io == nullptr");
+	}
+	if (processorUsage == nullptr)
+	{
+		throw std::invalid_argument("processorUsage == nullptr");
+	}
+	if (elapsedTime == nullptr)
+	{
+		throw std::invalid_argument("elapsedTime == nullptr");
+	}
 	if (processNames == nullptr)
 	{
 		throw std::invalid_argument("processNames == nullptr");
@@ -324,6 +369,11 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 	};
 
 	bool result = this->collectPerfomanceData(counters, values, processNames, totalIntervals, intervals);
+
+	if (!result)
+	{
+		return result;
+	}
 
 	std::vector<std::vector<double>> averagePerfomance;
 	for (size_t i = 0; i < values->size(); i++)
@@ -366,7 +416,6 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 	//}
 
 	delete values;
-
 	return result;
 }
 
