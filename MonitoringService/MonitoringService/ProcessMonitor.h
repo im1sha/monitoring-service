@@ -58,7 +58,7 @@ private:
 		WCHAR * domainString
 	);
 
-	bool _stdcall getCounterStatistics(
+	bool __stdcall getCounterStatistics(
 		double * workingSet,
 		double * workingSetPrivate,
 		double * io,

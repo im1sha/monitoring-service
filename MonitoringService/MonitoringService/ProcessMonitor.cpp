@@ -12,6 +12,37 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 	std::vector<ProcessInfo> * processInfos
 )
 {
+	/*CountersAnalizer * c = new CountersAnalizer();
+
+	std::vector<DWORD>* pids = new std::vector<DWORD>();
+	std::vector<DWORD>* ppids = new std::vector<DWORD>();
+	std::vector<DWORD>* threadCounts = new std::vector<DWORD>();
+	std::vector<double>* workingSet = new std::vector<double>();
+	std::vector<double>* workingSetPrivate = new std::vector<double>();
+	std::vector<double>* io = new std::vector<double>();
+	std::vector<double>* processorUsage = new std::vector<double>();
+	std::vector<double>* elapsedTime = new std::vector<double>();
+
+	std::vector<std::wstring>* processNames = new std::vector<std::wstring>();
+	c->getAveragePerfomance(pids, ppids, threadCounts,
+		workingSet, workingSetPrivate, io,
+		processorUsage, elapsedTime,
+		processNames);
+
+	delete pids;
+	delete ppids;
+	delete threadCounts;
+	delete workingSet;
+	delete workingSetPrivate;
+	delete io;
+	delete processorUsage;
+	delete elapsedTime;
+	delete processNames;
+
+	delete c;*/
+
+
+
 	HANDLE currentThreadToken;
 
 	//HANDLE snapshotHandle = ::CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0); 
@@ -263,7 +294,7 @@ void __stdcall ProcessMonitor::writeLogonDataOnError(
 	}
 }
 
-bool _stdcall ProcessMonitor::getCounterStatistics(
+bool __stdcall ProcessMonitor::getCounterStatistics(
 	double * workingSet,
 	double * workingSetPrivate,
 	double * io,

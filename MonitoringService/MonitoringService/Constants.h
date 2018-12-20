@@ -17,3 +17,8 @@ const wchar_t COUNTER_WORKING_SET_PRIVATE[22] = L"Working Set - Private";
 const wchar_t COUNTER_PPID[20] = L"Creating Process ID";
 const wchar_t COUNTER_THREAD_COUNT[13] = L"Thread Count";
 
+const wchar_t PROCESS_IDLE[5] = L"Idle";
+const wchar_t PROCESS_TOTAL[7] = L"_Total";
+
+
+

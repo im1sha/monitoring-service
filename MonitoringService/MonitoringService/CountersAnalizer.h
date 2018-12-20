@@ -51,6 +51,17 @@ private:
 	);
 
 	double __stdcall getAverage(std::vector<double> values);
+
+	std::vector<double> __stdcall normalizeVector(
+		std::vector<double> values, 
+		size_t idlePosition, 
+		size_t totalPosition
+	);
+
+	int __stdcall getStringPoistion(
+		std::vector<std::wstring> values, 
+		std::wstring stringToSearch
+	);
 	
 	PDH_COUNTER_PATH_ELEMENTS * __stdcall getPathsToCounter(
 		const WCHAR * machineName,

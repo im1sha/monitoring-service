@@ -233,6 +233,53 @@ double __stdcall CountersAnalizer::getAverage(std::vector<double> values)
 	return sum / (double)size;
 }
 
+std::vector<double> __stdcall CountersAnalizer::normalizeVector(
+	std::vector<double> values, 
+	size_t idlePosition,
+	size_t totalPosition
+) 
+{
+	double idleValue = values[idlePosition];
+	double totalValue = values[totalPosition];
+
+	double working = 100 - values[idlePosition];
+	double passedWorkingSum = 0;
+
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		if (i != idlePosition && i != totalPosition)
+		{
+			passedWorkingSum += values[i];
+		}
+	}
+
+	double normalizeMultiplier = working / passedWorkingSum;
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		if (i != idlePosition && i != totalPosition)
+		{
+			values[i] *= normalizeMultiplier;
+		}
+	}
+
+	return values;
+}
+
+int __stdcall CountersAnalizer::getStringPoistion(
+	std::vector<std::wstring> values,
+	std::wstring stringToSearch
+) 
+{
+	for (size_t i = 0; i < values.size(); i++)
+	{
+		if (values[i] == stringToSearch)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 bool __stdcall CountersAnalizer::getAveragePerfomance(
 	std::vector<DWORD>* pids,
 	std::vector<DWORD>* ppids,
@@ -254,22 +301,21 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 		new std::vector<std::vector<std::vector<double> > >();
 
 	std::vector <const WCHAR *> counters{
-		COUNTER_PROCESSOR_TIME_PERCENT,
-		COUNTER_PROCESS_ID,
-		COUNTER_ELAPSED_TIME,
-		COUNTER_IO_DATA_BYTES_IN_SEC,
-		COUNTER_WORKING_SET,
-		COUNTER_WORKING_SET_PRIVATE,
-		COUNTER_PPID,
-		COUNTER_THREAD_COUNT
+		COUNTER_PROCESSOR_TIME_PERCENT, // 0
+		COUNTER_PROCESS_ID,				// 1
+		COUNTER_ELAPSED_TIME,			// 2
+		COUNTER_IO_DATA_BYTES_IN_SEC,	// 3
+		COUNTER_WORKING_SET,			// 4
+		COUNTER_WORKING_SET_PRIVATE,	// 5
+		COUNTER_PPID,					// 6
+		COUNTER_THREAD_COUNT			// 7
 	};
 
 	const DWORD defaultInterval = 10;
 	const size_t defaultIntervalLength = 10;
 
 	std::vector<size_t> totalIntervals{
-		defaultIntervalLength, 1, 1, defaultIntervalLength,
-		defaultIntervalLength, defaultIntervalLength, 1, 1
+		defaultIntervalLength, 1, 1, defaultIntervalLength, 1, 1, 1, 1
 	};
 
 	std::vector<DWORD> intervals{ 
@@ -292,16 +338,11 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 			averagePerfomance[i].push_back(this->getAverage((*values)[i][j]));
 		}		
 	}
-	
 
-	//COUNTER_PROCESSOR_TIME_PERCENT,
-	//COUNTER_PROCESS_ID,
-	//COUNTER_ELAPSED_TIME,
-	//COUNTER_IO_DATA_BYTES_IN_SEC,
-	//COUNTER_WORKING_SET,
-	//COUNTER_WORKING_SET_PRIVATE,
-	//COUNTER_PPID,
-	//COUNTER_THREAD_COUNT
+	averagePerfomance[0] = this->normalizeVector(averagePerfomance[0],
+		this->getStringPoistion(*processNames, PROCESS_IDLE), 
+		this->getStringPoistion(*processNames, PROCESS_TOTAL)
+	);
 
 	*processorUsage = averagePerfomance[0];  
 	*pids = std::vector<DWORD>(averagePerfomance[1].begin(), averagePerfomance[1].end());

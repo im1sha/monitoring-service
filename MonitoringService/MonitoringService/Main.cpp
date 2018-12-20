@@ -40,22 +40,23 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 	std::vector<double>* elapsedTime = new std::vector<double>();
 
 	std::vector<std::wstring>* processNames = new std::vector<std::wstring>();
-	c->getAveragePerfomance(pids, ppids, threadCounts, 
-		workingSet, workingSetPrivate, io, 
+	c->getAveragePerfomance(pids, ppids, threadCounts,
+		workingSet, workingSetPrivate, io,
 		processorUsage, elapsedTime,
 		processNames);
 
-	delete pids; 
-	delete ppids; 
-	delete threadCounts; 
-	delete workingSet; 
-	delete workingSetPrivate; 
-	delete io; 
-	delete processorUsage; 
-	delete elapsedTime; 
+	delete pids;
+	delete ppids;
+	delete threadCounts;
+	delete workingSet;
+	delete workingSetPrivate;
+	delete io;
+	delete processorUsage;
+	delete elapsedTime;
 	delete processNames;
 
 	delete c;
+
 
 	::system("pause");
 	return 0;
