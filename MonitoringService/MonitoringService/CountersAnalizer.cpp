@@ -24,7 +24,7 @@ PDH_COUNTER_PATH_ELEMENTS * __stdcall CountersAnalizer::getPathsToCounter(
 	{
 		// final formatting:
 		//					  "\Process(X#index)\% Processor Time"	
-		cpe[i] = { (LPWSTR)machineName, instances[i], nullptr, nullptr, i, (LPWSTR)counterName };
+		cpe[i] = { (LPWSTR)machineName, instances[i], nullptr, nullptr, (DWORD)(1), (LPWSTR)counterName };
 	}
 
 	return cpe;
@@ -60,7 +60,10 @@ bool __stdcall CountersAnalizer::getCounterValues(
 			return result;
 		}
 
-		if ((status = ::PdhAddEnglishCounter(hQuery, fullPath, 0, &hCounter[i])) != ERROR_SUCCESS) {}
+		if ((status = ::PdhAddEnglishCounter(hQuery, fullPath, 0, &hCounter[i])) != ERROR_SUCCESS) 
+		{
+			return result;
+		}
 	}
 
 	for (size_t i = 0; i < cpeSize; i++)
@@ -81,6 +84,9 @@ bool __stdcall CountersAnalizer::getCounterValues(
 			if ((status = ::PdhGetFormattedCounterValue(hCounter[j], PDH_FMT_DOUBLE,
 				nullptr, &counterValue)) != ERROR_SUCCESS)
 			{
+				wprintf(L"FAILED @ stat=%X , i=%i , j=%i, name=s\n", 
+					(int)status, (int)i, (int)j/*, cpe[i].szObjectName*/);
+				(*resultValues)[j].push_back(0.0);
 				continue;
 			}
 
@@ -138,10 +144,31 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 	const WCHAR COUNTER_OBJECT_NAME[] = L"Process";
 
 	PDH_STATUS status = ERROR_SUCCESS;
-	LPWSTR counterListBuffer = nullptr;
+	volatile LPWSTR counterListBuffer = nullptr;
 	DWORD counterListSize = 0;
-	LPWSTR instanceListBuffer = nullptr;
+	volatile LPWSTR instanceListBuffer = nullptr;
 	DWORD instanceListSize = 0;
+
+
+
+	status = ::PdhEnumObjects(
+		nullptr, nullptr, counterListBuffer, &counterListSize, 
+		PERF_DETAIL_WIZARD, TRUE
+	);
+
+	if (status == PDH_MORE_DATA)
+	{
+		counterListBuffer = (LPWSTR)calloc(counterListSize, sizeof(WCHAR));
+		if (nullptr != counterListBuffer)
+		{
+			status = ::PdhEnumObjects(
+				nullptr, nullptr, counterListBuffer, &counterListSize,
+				PERF_DETAIL_WIZARD, TRUE
+			);
+			if (status != ERROR_SUCCESS) { }
+		}
+	}
+
 
 	status = ::PdhEnumObjectItems(nullptr, nullptr, COUNTER_OBJECT_NAME,
 		counterListBuffer, &counterListSize, instanceListBuffer,
@@ -151,7 +178,7 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 	{
 		counterListBuffer = (LPWSTR)calloc(counterListSize, sizeof(WCHAR));
 		instanceListBuffer = (LPWSTR)calloc(instanceListSize, sizeof(WCHAR));
-
+	
 		if ((nullptr != counterListBuffer) && (nullptr != instanceListBuffer))
 		{
 			status = ::PdhEnumObjectItems(nullptr, nullptr, COUNTER_OBJECT_NAME,
@@ -163,9 +190,7 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 				// getting process list
 				for (WCHAR * i = instanceListBuffer; *i != 0; i += wcslen(i) + 1)
 				{
-
 					processes->push_back(std::wstring(i));
-
 				}
 		
 				std::sort(processes->begin(), processes->end());
@@ -199,8 +224,14 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 					this->getCounterValues(pcpe, instances->size(), 
 						&((*values)[i]), totalIntervals[i], 
 						collectIntervals[i]);
+
+					if (pcpe != nullptr)
+					{
+						delete[] pcpe;
+					}
 				}
 			}
+			
 		}
 		else
 		{
@@ -216,6 +247,18 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 	{
 		free(instanceListBuffer);
 	}
+	if (instances != nullptr)
+	{
+		for (size_t i = 0; i < instances->size(); i++)
+		{
+			if ((*instances)[i] != nullptr)
+			{
+				delete[](*instances)[i];
+			}
+		}
+		delete instances;
+	}
+
 
 	return true;
 }
@@ -252,7 +295,6 @@ std::vector<double> __stdcall CountersAnalizer::normalizeVector(
 	}
 	
 	double idleValue = values[idlePosition];
-	double totalValue = values[totalPosition];
 
 	double working = 100 - values[idlePosition];
 	double passedWorkingSum = 0;
@@ -356,10 +398,10 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 	};
 
 	const DWORD defaultInterval = 10;
-	const size_t defaultIntervalLength = 10;
+	const size_t defaultIntervalTotal = 20;
 
 	std::vector<size_t> totalIntervals{
-		defaultIntervalLength, 1, 1, defaultIntervalLength, 1, 1, 1, 1
+		defaultIntervalTotal, 1, 1, defaultIntervalTotal, 1, 1, 1, 1
 	};
 
 	std::vector<DWORD> intervals{ 
@@ -367,7 +409,8 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 		defaultInterval, defaultInterval, defaultInterval, defaultInterval
 	};
 
-	bool result = this->collectPerfomanceData(counters, values, processNames, totalIntervals, intervals);
+	bool result = this->collectPerfomanceData(counters, values, processNames,
+		totalIntervals, intervals);
 
 	if (!result)
 	{

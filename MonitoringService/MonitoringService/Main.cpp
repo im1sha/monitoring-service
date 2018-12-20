@@ -13,8 +13,7 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 
 	//DWORD now1 = GetTickCount();
 
-	monitor->getProcessesInfo(&pi);
-	std::sort(pi.begin(), pi.end());
+	
 
 	/*
 	std::sort(pe.begin(), pe.end(), [](const ProcessEntry& left, const ProcessEntry& right)
@@ -33,15 +32,22 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 		double processorUsage,
 		double elapsedTime
 	)*/
+	//for (ProcessInfo p : pi)
+		//{
+		//	::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  WS %-10.0f WSP %-10.0f IO %-5.0f CPU %-5.2f TIM %-10.0f\n", 
+		//		p.fileName, p.processId, p.parentProcessId, p.runThreads, 
+		//		p.userName, p.domainName, p.workingSetInMb, p.workingSetPrivateInMb, p.io, p.processorUsage, p.elapsedTime);
+		//}
 
-	::printf("total IDS: %u\n\n", pi.size());
-	for (ProcessInfo p : pi)
-	{
-		::printf("%-40S PID %-10lu PPID %-10lu THR %-7lu  %-17S  %-17S  WS %-10.0f WSP %-10.0f IO %-5.0f CPU %-5.2f TIM %-10.0f\n", 
-			p.fileName, p.processId, p.parentProcessId, p.runThreads, 
-			p.userName, p.domainName, p.workingSetInMb, p.workingSetPrivateInMb, p.io, p.processorUsage, p.elapsedTime);
+	for (size_t i = 0; i < 200; i++)
+	{	
+		pi = std::vector<ProcessInfo>();
+		monitor->getProcessesInfo(&pi);
+		std::sort(pi.begin(), pi.end());
+		::printf("----\ntotal IDS: %u\n\n", pi.size());	
+		wprintf(L"%s %f\n", (pi)[0].fileName, (pi)[0].processorUsage);
+		wprintf(L"%s %f\n\n", (pi)[1].fileName, (pi)[1].processorUsage);
 	}
-
 
 	//CountersAnalizer * c = new CountersAnalizer();
 	//std::vector<DWORD>* pids = new std::vector<DWORD>();
