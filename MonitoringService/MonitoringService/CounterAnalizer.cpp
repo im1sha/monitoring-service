@@ -143,18 +143,48 @@ bool __stdcall CounterAnalizer::collectPerfomanceData(
 
 			if (status == ERROR_SUCCESS)
 			{
+				// getting process list
+				std::vector<std::wstring> processes;
 				for (WCHAR * i = instanceListBuffer; *i != 0; i += wcslen(i) + 1)
 				{
-					// to get:    Process(X)
+					WCHAR *process = new WCHAR[MAX_PATH] { };
+					wcscpy_s(process, MAX_PATH, i);
+					processes.push_back(std::wstring(process));
+					delete[] process;
+				}
+
+				std::sort(processes.begin(), processes.end());
+
+				int currentInstanceNo = 0;
+				for (size_t i = 0; i < processes.size(); i++)
+				{
+					// to get: Process(X#i)
 					WCHAR *instance = new WCHAR[MAX_PATH]{};
-					WCHAR begin[] = L"Process(";
-					size_t len = wcslen(begin);
-					wcscpy_s(instance, MAX_PATH, begin);
-					wcscpy_s(instance + len, MAX_PATH - len, i);
-					wcscpy_s(instance + len + wcslen(i), MAX_PATH - len - wcslen(i), L")");
+
+					/*if(wcscmp(processes[i].c_str(), processes[i-1].c_str()) == 0);*/
+
+					if ((i > 0) && (processes[i] == processes[i-1]))
+					{
+						currentInstanceNo++;
+					}
+					else
+					{
+						currentInstanceNo = 0;
+					}
+
+					swprintf(instance, MAX_PATH, L"Process(%s#%i)", 
+						processes[i].c_str(), currentInstanceNo);
 
 					instances->push_back(instance);
 				}
+
+				/*for (size_t i = 0; i < processes.size(); i++)
+				{
+					if (processes[i] != nullptr)
+					{
+						delete[] processes[i];
+					}
+				}	*/			
 
 				for (size_t i = 0; i < counterNames.size(); i++)
 				{
@@ -203,7 +233,7 @@ int __stdcall CounterAnalizer::collectExample()
 	std::vector<long long> ttt;
 	for (size_t i = 0; i < (*values)[1].size(); i++) //  counter_vector< pid_vector < double_vector > >
 	{
-		ttt.push_back((*values)[1][i][0]);
+		ttt.push_back((long long)(*values)[1][i][0]);
 	}
 	std::sort(ttt.begin(), ttt.end());
 
