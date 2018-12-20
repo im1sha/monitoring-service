@@ -84,8 +84,8 @@ bool __stdcall CountersAnalizer::getCounterValues(
 			if ((status = ::PdhGetFormattedCounterValue(hCounter[j], PDH_FMT_DOUBLE,
 				nullptr, &counterValue)) != ERROR_SUCCESS)
 			{
-				wprintf(L"FAILED @ stat=%X , i=%i , j=%i, name=s\n", 
-					(int)status, (int)i, (int)j/*, cpe[i].szObjectName*/);
+				//wprintf(L"FAILED @ stat=%X , i=%i , j=%i, name=s\n", 
+				//	(int)status, (int)i, (int)j/*, cpe[i].szObjectName*/);
 				(*resultValues)[j].push_back(0.0);
 				continue;
 			}
@@ -122,6 +122,7 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 	std::vector<DWORD> collectIntervals
 )
 {
+	bool result = true;
 	if (processes == nullptr)
 	{
 		throw std::invalid_argument("processes == nullptr");
@@ -165,7 +166,10 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 				nullptr, nullptr, counterListBuffer, &counterListSize,
 				PERF_DETAIL_WIZARD, TRUE
 			);
-			if (status != ERROR_SUCCESS) { }
+			if (status != ERROR_SUCCESS) 
+			{
+				return false;
+			}
 		}
 	}
 
@@ -221,7 +225,7 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 					PDH_COUNTER_PATH_ELEMENTS* pcpe = 
 						this->getPathsToCounter(nullptr, *instances, counterNames[i]);
 
-					this->getCounterValues(pcpe, instances->size(), 
+					result &= this->getCounterValues(pcpe, instances->size(), 
 						&((*values)[i]), totalIntervals[i], 
 						collectIntervals[i]);
 
@@ -236,7 +240,12 @@ bool __stdcall CountersAnalizer::collectPerfomanceData(
 		else
 		{
 			status = ERROR_OUTOFMEMORY;
+			result = false;
 		}
+	}
+	else 
+	{
+		result = false;
 	}
 
 	if (counterListBuffer != nullptr)
@@ -293,29 +302,24 @@ std::vector<double> __stdcall CountersAnalizer::normalizeVector(
 	{
 		throw std::invalid_argument("totalPosition is out of range");
 	}
-	
-	double idleValue = values[idlePosition];
 
-	double working = 100 - values[idlePosition];
-	double passedWorkingSum = 0;
+	values[totalPosition] = 100;
+	double passedWorkingSum = -values[totalPosition];
 
 	for (size_t i = 0; i < values.size(); i++)
 	{
-		if (i != idlePosition && i != totalPosition)
-		{
-			passedWorkingSum += values[i];
-		}
+		passedWorkingSum += values[i];
 	}
 
-	double normalizeMultiplier = working / passedWorkingSum;
+	double normalizeMultiplier = 100 / passedWorkingSum;
 	for (size_t i = 0; i < values.size(); i++)
 	{
-		if (i != idlePosition && i != totalPosition)
+		if (i != totalPosition)
 		{
 			values[i] *= normalizeMultiplier;
 		}
 	}
-	values[totalPosition] = 100;
+	
 	return values;
 }
 
@@ -397,8 +401,8 @@ bool __stdcall CountersAnalizer::getAveragePerfomance(
 		COUNTER_THREAD_COUNT			// 7
 	};
 
-	const DWORD defaultInterval = 10;
-	const size_t defaultIntervalTotal = 20;
+	const DWORD defaultInterval = 1;
+	const size_t defaultIntervalTotal = 50;
 
 	std::vector<size_t> totalIntervals{
 		defaultIntervalTotal, 1, 1, defaultIntervalTotal, 1, 1, 1, 1

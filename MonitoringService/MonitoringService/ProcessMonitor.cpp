@@ -12,6 +12,7 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 	std::vector<ProcessInfo> * processInfos
 )
 {
+	bool result = true;
 	std::vector<DWORD> pids;
 	std::vector<DWORD> ppids;
 	std::vector<DWORD> threadCounts;
@@ -21,16 +22,13 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 	std::vector<double> processorUsage;
 	std::vector<double> elapsedTime;
 	std::vector<std::wstring> processNames;
-
-
 	
 	CountersAnalizer * c = new CountersAnalizer();
-	c->getAveragePerfomance(&pids, &ppids, &threadCounts,
+	result &= c->getAveragePerfomance(&pids, &ppids, &threadCounts,
 		&workingSet, &workingSetPrivate, &io,
 		&processorUsage, &elapsedTime,
 		&processNames);
 	delete c;
-
 
 	HANDLE currentThreadToken;
 
@@ -79,9 +77,8 @@ bool __stdcall ProcessMonitor::getProcessesInfo(
 
 	::RevertToSelf();
 
-	return true;
+	return result;
 }
-
 
 
 bool __stdcall ProcessMonitor::getLogonDataFromToken(
