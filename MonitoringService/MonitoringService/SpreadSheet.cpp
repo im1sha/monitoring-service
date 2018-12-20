@@ -12,54 +12,53 @@ SpreadSheet::~SpreadSheet()
 	this->deinitialize();
 }
 
-void SpreadSheet::initialize(int rows, int columns, std::vector<std::wstring> strings, LPARAM lParam)
+void SpreadSheet::initialize(/*int rows, int columns, std::vector<std::wstring> strings, LPARAM lParam*/)
 {
-	rows_ = rows;
-	columns_ = columns;
+	//rows_ = rows;
+	//columns_ = columns;
 
-	HDC winDC = ::GetDC(hWnd_);
+	//HDC winDC = ::GetDC(hWnd_);
 
-	defaultColumnWidth_ = ::GetSystemMetrics(SM_CXSCREEN) / columns_ / 3;
+	//defaultColumnWidth_ = ::GetSystemMetrics(SM_CXSCREEN) / columns_ / 3;
 
-	hPen_ = ::CreatePen(PS_SOLID, 1, RGB(200, 100, 200));
-	hOldPen_ = (HPEN) ::SelectObject(winDC, hPen_);
+	//hPen_ = ::CreatePen(PS_SOLID, 1, RGB(200, 100, 200));
+	//hOldPen_ = (HPEN) ::SelectObject(winDC, hPen_);
 
-	oldBackground_ = ::SetBkMode(winDC, TRANSPARENT);
+	//oldBackground_ = ::SetBkMode(winDC, TRANSPARENT);
 
-	hFont_ = ::CreateFont(DEFAULT_FONT_SIZE, NULL, NULL, NULL,
-		FW_NORMAL, FALSE, FALSE, FALSE,
-		DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS,
-		CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
-		DEFAULT_PITCH | FF_SWISS, DEFAULT_FONT.c_str());
-	hPreviousFont_ = ::SelectObject(winDC, hFont_);
-	oldColor_ = ::SetTextColor(winDC, RGB(0, 0, 0));
+	//hFont_ = ::CreateFont(DEFAULT_FONT_SIZE, NULL, NULL, NULL,
+	//	FW_NORMAL, FALSE, FALSE, FALSE,
+	//	DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS,
+	//	CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
+	//	DEFAULT_PITCH | FF_SWISS, DEFAULT_FONT.c_str());
+	//hPreviousFont_ = ::SelectObject(winDC, hFont_);
+	//oldColor_ = ::SetTextColor(winDC, RGB(0, 0, 0));
 
-	// retrieve space width
-	SIZE spaceSize = {};
-	::GetTextExtentPoint32(winDC, L" ", 1, &spaceSize);
-	spaceWidth_ = spaceSize.cx;
+	//// retrieve space width
+	//SIZE spaceSize = {};
+	//::GetTextExtentPoint32(winDC, L" ", 1, &spaceSize);
+	//spaceWidth_ = spaceSize.cx;
 
-	::ReleaseDC(hWnd_, winDC);
+	//::ReleaseDC(hWnd_, winDC);
 
-	this->processStrings(strings);
+	//this->processStrings(strings);
 
-	// find minColumnWidth_ by length of word with max length
-	for (size_t i = 0; i < wordsLenghts_.size(); i++)
-	{
-		for (size_t j = 0; j < wordsLenghts_[i].size(); j++)
-		{
-			if (wordsLenghts_[i][j] + spaceWidth_ > minColumnWidth_)
-			{
-				minColumnWidth_ = wordsLenghts_[i][j] + spaceWidth_;
-			}
-		}
-	}
-	if (minColumnWidth_ > defaultColumnWidth_)
-	{
-		minColumnWidth_ = defaultColumnWidth_;
-	}
-
-	isInitialized_ = true;
+	//// find minColumnWidth_ by length of word with max length
+	//for (size_t i = 0; i < wordsLenghts_.size(); i++)
+	//{
+	//	for (size_t j = 0; j < wordsLenghts_[i].size(); j++)
+	//	{
+	//		if (wordsLenghts_[i][j] + spaceWidth_ > minColumnWidth_)
+	//		{
+	//			minColumnWidth_ = wordsLenghts_[i][j] + spaceWidth_;
+	//		}
+	//	}
+	//}
+	//if (minColumnWidth_ > defaultColumnWidth_)
+	//{
+	//	minColumnWidth_ = defaultColumnWidth_;
+	//}
+	//isInitialized_ = true;
 }
 
 void SpreadSheet::deinitialize()
@@ -115,6 +114,10 @@ POINT SpreadSheet::getMinWindowSize()
 	deltaSize.y = (windowSize.bottom - windowSize.top) - clientSize.bottom;
 
 	return { minColumnWidth_ * columns_ + deltaSize.x, firstRowHeight_ + deltaSize.y };
+}
+
+void SpreadSheet::respondOnTimer()
+{
 }
 
 // updates table represetation

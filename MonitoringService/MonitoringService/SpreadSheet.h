@@ -22,10 +22,11 @@ public:
 	const int MIN_LINES = 1;
 
 	void update();
-	void initialize(int rows, int columns, std::vector<std::wstring> strings, LPARAM lParam);
+	void initialize(/*int rows, int columns, std::vector<std::wstring> strings, LPARAM lParam*/);
 
 	bool isInitialized();
 	POINT getMinWindowSize();
+	void respondOnTimer();
 
 private:
 
@@ -76,4 +77,6 @@ private:
 	std::vector<std::wstring> split(const std::wstring stringToSplit, wchar_t delimiter);
 	WCHAR** toWcharArray(std::vector<std::wstring> strings);
 	void freeWcharStringArray(wchar_t ** arrayToFree, size_t length);
+
+	
 };
