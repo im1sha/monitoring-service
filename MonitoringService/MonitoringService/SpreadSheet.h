@@ -36,7 +36,7 @@ private:
 	ProcessMonitor * monitor_ = nullptr;
 
 	std::vector<ProcessInfo> pi_;
-
+	std::vector<std::vector<std::wstring>> content_;
 	std::vector<LONG> columnWidths_;
 
 	LONG defaultColumnWidth_;
@@ -71,10 +71,12 @@ private:
 	void __stdcall draw(std::vector<std::vector<std::wstring>> content);
 
 	void __stdcall paintTable(
+		size_t yShift,
+		RECT client,
 		LONG yStep,
 		std::vector<LONG> xSteps,
 		LONG totalWidth,
-		std::vector<std::vector<std::wstring>> strings,
+		std::vector<std::vector<wchar_t*>> strings,
 		HDC wndDC
 	);
 
@@ -85,6 +87,10 @@ private:
 	std::wstring __stdcall dwordToWstring(DWORD d);
 
 	std::vector<std::vector<std::wstring>> __stdcall processInfoVectorToWstrVector(std::vector<ProcessInfo> pi);
+
+	std::vector<wchar_t*> __stdcall toWcharVector(std::vector<std::wstring> strings);
+
+	void __stdcall freeWcharVector(std::vector<wchar_t*> v);
 
 	void __stdcall up();
 	void __stdcall down();

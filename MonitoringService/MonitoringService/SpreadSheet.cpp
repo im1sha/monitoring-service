@@ -30,7 +30,7 @@ void __stdcall SpreadSheet::initialize()
 
 	defaultColumnWidth_ = ::GetSystemMetrics(SM_CXSCREEN) / 10;
 
-	hPen_ = ::CreatePen(PS_SOLID, 1, RGB(200, 100, 200));
+	hPen_ = ::CreatePen(PS_SOLID, 1, RGB(255, 255, 255));
 	hOldPen_ = (HPEN) ::SelectObject(winDC, hPen_);
 
 	oldBackground_ = ::SetBkMode(winDC, TRANSPARENT);
@@ -119,6 +119,7 @@ void __stdcall SpreadSheet::respondOnTimer()
 {
 	::EnterCriticalSection(piSection_);
 	this->pi_ = this->monitor_->getPerfomanceData();
+	content_ = processInfoVectorToWstrVector(pi_);
 	::LeaveCriticalSection(piSection_);
 	update();	
 }
@@ -153,22 +154,23 @@ void __stdcall SpreadSheet::respondOnKeyPress(WPARAM wParam)
 
 void __stdcall SpreadSheet::up()
 {
-	
+	if (currentTopLine_ < 0)
+	{
+		currentTopLine_ += 20;
+	}
 }
 
 void __stdcall SpreadSheet::down()
 {
-
+	currentTopLine_ -= 20;
 }
 
 void __stdcall SpreadSheet::left()
 {
-
 }
 
 void __stdcall SpreadSheet::right()
 {
-
 }
 
 // updates table represetation
@@ -176,12 +178,10 @@ void __stdcall SpreadSheet::update()
 {
 	if (isInitialized())
 	{
-		::EnterCriticalSection(piSection_);
-		std::vector<std::vector<std::wstring>> content = processInfoVectorToWstrVector(pi_);
-		::LeaveCriticalSection(piSection_);
-		if (content.size() != 0)
+
+		if (content_.size() != 0)
 		{
-			this->draw(content);
+			this->draw(content_);
 		}
 	}
 }
@@ -216,9 +216,23 @@ void __stdcall SpreadSheet::draw(std::vector<std::vector<std::wstring>> content)
 	{
 		return;
 	}
-	this->paintTable(lineHeight_, columnWidths_, 
+
+	std::vector<std::vector<wchar_t*>> v;
+	for (size_t i = 0; i < content.size(); i++)
+	{
+		v.push_back(toWcharVector(content[i]));
+	}
+	std::fill(columnWidths_.begin(), columnWidths_.end(), 
+		(clientRect.right - clientRect.left) / v[0].size());
+
+	this->paintTable(currentTopLine_, clientRect, lineHeight_, columnWidths_,
 		clientRect.right - clientRect.left, 
-		content, wndDC);
+		v, wndDC);
+
+	for (size_t i = 0; i < v.size(); i++)
+	{
+		freeWcharVector(v[i]);
+	}
 
 	// draw ending
 	::EndPaint(hWnd_, &ps);
@@ -227,28 +241,77 @@ void __stdcall SpreadSheet::draw(std::vector<std::vector<std::wstring>> content)
 
 // paints table 
 void __stdcall SpreadSheet::paintTable(
+	size_t yShift,
+	RECT client,
 	LONG yStep,
 	std::vector<LONG> xSteps,
 	LONG totalWidth, 
-	std::vector<std::vector<std::wstring>> strings, 
+	std::vector<std::vector<wchar_t*>> strings, 
 	HDC wndDC
 )
 {
 	size_t rows = strings.size();
-	size_t columns = strings[0].size();
+	size_t columns = strings[0].size(); 
+	LONG currentBottom = yStep;
+	LONG currentRigthBound = 0;
 
-	LONG currentBottom = 0;
+	if (yShift == 0)
+	{	
+		std::vector<std::wstring> header{
+			L"name",
+			L"username",
+			L"domainname",
+			L"processid",
+			L"threads",
+			L"ppid",
+			L"working set(Mb)",
+			L"private set(Mb)",
+			L"io",
+			L"cpu %",
+			L"elapsed time"
+		};
+	
+		for (size_t i = 0; i < columns; i++)
+		{
+			currentRigthBound += xSteps[i];
+			const WCHAR* textToPrint = header[i].c_str();
 
+			RECT cell = {
+				currentRigthBound - xSteps[i],
+				0,
+				currentRigthBound,
+				currentBottom
+			};
+
+			RECT textRect = cell;
+			textRect.left += spaceWidth_;
+
+			Rectangle(
+				wndDC,
+				cell.left,
+				0,
+				cell.right + 1,
+				cell.bottom + 1
+			);
+
+			::DrawText(wndDC, textToPrint, (int)wcslen(textToPrint),
+				&textRect, 0);
+		}
+
+	}
+
+	currentBottom = yStep + yStep*yShift;
+	currentRigthBound = 0;
 	for (size_t j = 0; j < rows; j++)
 	{
 		currentBottom += yStep;
-		LONG currentRigthBound = 0;
+		currentRigthBound = 0;
 
 		for (size_t i = 0; i < columns; i++)
 		{
 			currentRigthBound += xSteps[i];
 
-			const WCHAR* textToPrint = strings[j][i].c_str();
+			WCHAR* textToPrint = strings[j][i];
 
 			RECT cell = {
 				currentRigthBound - xSteps[i],
@@ -258,7 +321,7 @@ void __stdcall SpreadSheet::paintTable(
 			};
 
 			RECT textRect = cell;
-			//textRect.top = currentBottom - ((xSteps[j] + yStep) / 2);
+			textRect.left += spaceWidth_;
 
 			Rectangle(
 				wndDC,
@@ -269,7 +332,7 @@ void __stdcall SpreadSheet::paintTable(
 			);
 
 			::DrawText(wndDC, textToPrint, (int)wcslen(textToPrint),
-				&textRect, DT_CENTER | DT_WORDBREAK | DT_EDITCONTROL);
+				&textRect, 0);
 
 		}
 	}
@@ -277,10 +340,10 @@ void __stdcall SpreadSheet::paintTable(
 	// fill area to the right of the table
 	::Rectangle(
 		wndDC,
-		(LONG)(yStep * columns),
-		(LONG)0,
-		(LONG)(yStep * columns + totalWidth % yStep + 1),
-		(LONG)currentBottom + 1
+		currentRigthBound,
+		0L,
+		client.right,
+		client.bottom
 	);
 }
 
@@ -309,8 +372,7 @@ void __stdcall SpreadSheet::getCellParameters(
 
 			::GetTextExtentPoint32(wndDC, str,
 				(int)strings[i][j].length() + 1, &stringSize); // get string length 
-			
-			
+						
 			if (stringSize.cy > lineHeight_)
 			{
 				lineHeight_ = stringSize.cy;
@@ -347,21 +409,22 @@ std::vector<std::vector<std::wstring>> __stdcall SpreadSheet::processInfoVectorT
 {
 	std::vector<std::vector<std::wstring>> result;
 
+	
 	for (size_t i = 0; i < pi.size(); i++)
 	{
 		result.push_back(std::vector<std::wstring>());
 	}
 
-	for (size_t i = 0; i < pi.size(); i++)
+	for (size_t i = 0; i < pi.size() ; i++)
 	{
-		result[i].push_back(dwordToWstring((pi)[i].processId));
-		result[i].push_back(dwordToWstring((pi)[i].runThreads));
-		result[i].push_back(dwordToWstring((pi)[i].parentProcessId));
-
 		result[i].push_back(std::wstring((pi)[i].fileName));
 		result[i].push_back(std::wstring((pi)[i].userName));
 		result[i].push_back(std::wstring((pi)[i].domainName));
 
+		result[i].push_back(dwordToWstring((pi)[i].processId));
+		result[i].push_back(dwordToWstring((pi)[i].runThreads));
+		result[i].push_back(dwordToWstring((pi)[i].parentProcessId));
+		
 		result[i].push_back(doubleToWstring((pi)[i].workingSetInMb));
 		result[i].push_back(doubleToWstring((pi)[i].workingSetPrivateInMb));
 		result[i].push_back(doubleToWstring((pi)[i].io));
@@ -372,5 +435,40 @@ std::vector<std::vector<std::wstring>> __stdcall SpreadSheet::processInfoVectorT
 	return result;
 }
 
+
+
+
+// gets wchar_t** representation of std::vector<std::wstring>
+std::vector<wchar_t*> SpreadSheet::toWcharVector(std::vector<std::wstring> strings)
+{
+	std::vector<wchar_t*> result;
+
+	if (strings.size() == 0)
+	{
+		return result;
+	}
+
+	size_t stringLenght;
+	for (size_t i = 0; i < strings.size(); i++)
+	{
+		WCHAR* tmp = (WCHAR*)::calloc(strings[i].size() + 1, sizeof(WCHAR));
+		wcscpy_s(tmp, strings[i].size() + 1, strings[i].c_str());
+		result.push_back(tmp);
+	}
+
+	return result;
+}
+
+// frees wchar_t** valiable
+void SpreadSheet::freeWcharVector(std::vector<wchar_t*> v)
+{
+	for (size_t j = 0; j < v.size(); j++)
+	{
+		if (v[j] != nullptr)
+		{
+			::free(v[j]);
+		}
+	}
+}
 
 

@@ -64,7 +64,7 @@ ATOM __stdcall Window::registerClass(WNDCLASSEX wndClassEx, HINSTANCE hInstance,
 	wndClassEx.hInstance = hInstance;
 	wndClassEx.hIcon = nullptr;
 	wndClassEx.hCursor = ::LoadCursor(nullptr, IDC_ARROW);
-	wndClassEx.hbrBackground = ::CreateSolidBrush(DEFAULT_BACKGROUND_COLOR);
+	wndClassEx.hbrBackground = nullptr/*::CreateSolidBrush(DEFAULT_BACKGROUND_COLOR)*/;
 	wndClassEx.lpszMenuName = nullptr;
 	wndClassEx.lpszClassName = DEFAULT_CLASS_NAME;
 	wndClassEx.hIconSm = nullptr;
