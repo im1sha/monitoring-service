@@ -65,23 +65,33 @@ private:
 	int oldBackground_;
 	COLORREF oldColor_;
 
+	CRITICAL_SECTION* piSection_;
+
 	/* private methods */
 	void __stdcall deinitialize();
-	void __stdcall draw();
+	void __stdcall draw(std::vector<std::vector<std::wstring>> content);
 
 	void __stdcall paintTable(
-		LONG xStep,
-		std::vector<LONG> ySteps,
-		int totalWidth,
+		LONG yStep,
+		std::vector<LONG> xSteps,
+		LONG totalWidth,
 		std::vector<std::vector<std::wstring>> strings,
 		HDC wndDC
 	);
 
 	void __stdcall getCellParameters(std::vector<std::vector<std::wstring>> strings);
 
+	std::wstring __stdcall doubleToWstring(double d);
+
+	std::wstring __stdcall dwordToWstring(DWORD d);
+
+	std::vector<std::vector<std::wstring>> __stdcall processInfoVectorToWstrVector(std::vector<ProcessInfo>* pi);
+
 	void __stdcall up();
 	void __stdcall down();
 	void __stdcall left();
 	void __stdcall right();
+
+
 };
 

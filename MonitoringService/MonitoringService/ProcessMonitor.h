@@ -81,5 +81,7 @@ private:
 	HANDLE thread_ = nullptr;
 
 	bool __stdcall isRunning();
+
+	HANDLE readyEvent_;
 };
 

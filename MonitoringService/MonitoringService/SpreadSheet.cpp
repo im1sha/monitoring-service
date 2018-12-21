@@ -4,12 +4,15 @@
 
 SpreadSheet::SpreadSheet(HWND hWnd, ProcessMonitor* monitor)
 {
+	piSection_ = new CRITICAL_SECTION();
+	::InitializeCriticalSectionAndSpinCount(piSection_, DEFAULT_SPIN_COUNT);
 	this->hWnd_ = hWnd;
 	this->monitor_ = monitor;
 	if (this->monitor_ != nullptr)
 	{
 		this->monitor_->runAsBackground();
 	}
+	::SetTimer(hWnd, 1, 1000, nullptr);
 }
 
 SpreadSheet::~SpreadSheet()
@@ -52,6 +55,7 @@ void __stdcall SpreadSheet::initialize()
 
 void __stdcall SpreadSheet::deinitialize()
 {
+	::KillTimer(hWnd_, 1);
 	isInitialized_ = false;
 
 	// restoring previous graphical settings
@@ -82,6 +86,12 @@ void __stdcall SpreadSheet::deinitialize()
 
 	// free memory
 	delete this->monitor_;
+
+	if (piSection_ != nullptr)
+	{
+		::DeleteCriticalSection(piSection_);
+		delete piSection_;
+	}
 }
 
 bool __stdcall SpreadSheet::isInitialized()
@@ -107,8 +117,10 @@ POINT __stdcall SpreadSheet::getMinWindowSize()
 
 void __stdcall SpreadSheet::respondOnTimer()
 {
+	::EnterCriticalSection(piSection_);
 	this->pi_ = this->monitor_->getPerfomanceData();
-	update();
+	::LeaveCriticalSection(piSection_);
+	update();	
 }
 
 void __stdcall SpreadSheet::respondOnKeyPress(WPARAM wParam)
@@ -164,12 +176,18 @@ void __stdcall SpreadSheet::update()
 {
 	if (isInitialized_)
 	{
-		this->draw();
+		::EnterCriticalSection(piSection_);
+		std::vector<std::vector<std::wstring>> content = processInfoVectorToWstrVector(&pi_);
+		::LeaveCriticalSection(piSection_);
+		if (content.size() != 0)
+		{
+			this->draw(content);
+		}
 	}
 }
 
 // draws table and fill it with content
-void __stdcall SpreadSheet::draw()
+void __stdcall SpreadSheet::draw(std::vector<std::vector<std::wstring>> content)
 {
 	// client window's data gathering
 	HDC wndDC = ::GetDC(hWnd_);
@@ -190,36 +208,17 @@ void __stdcall SpreadSheet::draw()
 	::SetBkMode(wndDC, TRANSPARENT);
 	::SetTextColor(wndDC, RGB(46, 23, 150));
 
-	// width calculating
-	int averageColumnWidth = (clientRect.right - clientRect.left) / columns;
-	int xStep = (averageColumnWidth < minColumnWidth_) ? minColumnWidth_ : averageColumnWidth; /* column width */
-
-	// rows height calculating
-	std::vector<int> textHeights = this->getTextHeights(wordsLenghts_, xStep, lineHeight_);
-	firstRowHeight_ = textHeights[0];
-	int fullTextHeight = 0;
-	for (size_t i = 0; i < rows; i++)
-	{
-		fullTextHeight += textHeights[i];
-	}
-
-	std::vector<int> ySteps(rows);
-
-	if (clientRect.bottom - clientRect.top > fullTextHeight)
-	{
-		for (size_t i = 0; i < rows; i++)
-		{
-			ySteps[i] = textHeights[i] + (clientRect.bottom - clientRect.top - fullTextHeight) / rows;
-		}
-		ySteps[ySteps.size() - 1] += (clientRect.bottom - clientRect.top - fullTextHeight) % rows;
-	}
-	else
-	{
-		ySteps = textHeights;
-	}
+	// width & height calculating
+	this->getCellParameters(content);
 
 	// table painting
-	this->paintTable(rows, columns, xStep, ySteps, clientRect.right - clientRect.left, textHeights, tableStrings_, wndDC);
+	if (content.size() == 0)
+	{
+		return;
+	}
+	this->paintTable(lineHeight_, columnWidths_, 
+		clientRect.right - clientRect.left, 
+		content, wndDC);
 
 	// draw ending
 	::EndPaint(hWnd_, &ps);
@@ -228,32 +227,38 @@ void __stdcall SpreadSheet::draw()
 
 // paints table 
 void __stdcall SpreadSheet::paintTable(
-	LONG xStep,
-	std::vector<LONG> ySteps,
-	int totalWidth, 
+	LONG yStep,
+	std::vector<LONG> xSteps,
+	LONG totalWidth, 
 	std::vector<std::vector<std::wstring>> strings, 
 	HDC wndDC
 )
 {
-	int currentBottom = 0;
+	size_t rows = strings.size();
+	size_t columns = strings[0].size();
+
+	LONG currentBottom = 0;
 
 	for (size_t j = 0; j < rows; j++)
 	{
-		int yStep = ySteps[j];
 		currentBottom += yStep;
+		LONG currentRigthBound = 0;
+
 		for (size_t i = 0; i < columns; i++)
 		{
-			wchar_t* textToPrint = strings[j * columns + i];
+			currentRigthBound += xSteps[i];
+
+			const WCHAR* textToPrint = strings[j][i].c_str();
 
 			RECT cell = {
-				(LONG)(xStep * i),
-				(LONG)(currentBottom - ySteps[j]),
-				(LONG)(xStep * (i + 1)),
-				(LONG)(currentBottom)
+				currentRigthBound - xSteps[i],
+				currentBottom - yStep,
+				currentRigthBound,
+				currentBottom
 			};
 
 			RECT textRect = cell;
-			textRect.top = currentBottom - ((ySteps[j] + textHeights[j]) / 2);
+			//textRect.top = currentBottom - ((xSteps[j] + yStep) / 2);
 
 			Rectangle(
 				wndDC,
@@ -265,17 +270,19 @@ void __stdcall SpreadSheet::paintTable(
 
 			::DrawText(wndDC, textToPrint, (int)wcslen(textToPrint),
 				&textRect, DT_CENTER | DT_WORDBREAK | DT_EDITCONTROL);
+
+			delete[] textToPrint;
 		}
 	}
 
 	// fill area to the right of the table
-	::Rectangle(
+	/*::Rectangle(
 		wndDC,
-		(LONG)(xStep * columns),
+		(LONG)(yStep * columns),
 		(LONG)0,
-		(LONG)(xStep * columns + totalWidth % xStep + 1),
+		(LONG)(yStep * columns + totalWidth % yStep + 1),
 		(LONG)currentBottom + 1
-	);
+	);*/
 }
 
 // initializes columnWidths_ & lineHeight_
@@ -287,7 +294,7 @@ void __stdcall SpreadSheet::getCellParameters(
 	HDC wndDC = ::GetDC(hWnd_);
 
 	size_t totalColumns = 0;
-	if (strings.size != 0)
+	if (strings.size() != 0)
 	{
 		totalColumns = strings[0].size();
 	}
@@ -315,7 +322,57 @@ void __stdcall SpreadSheet::getCellParameters(
 	::ReleaseDC(hWnd_, wndDC);
 }
 
+std::wstring __stdcall SpreadSheet::doubleToWstring(double d) 
+{
+	std::wstringstream s;
+	s << d;
+	std::wstring wstr(s.str());
+	return wstr;
+}
 
+std::wstring __stdcall SpreadSheet::dwordToWstring(DWORD d)
+{
+	std::wstringstream s;
+	s << d;
+	std::wstring wstr(s.str());
+	return wstr;
+}
+
+std::vector<std::vector<std::wstring>> __stdcall SpreadSheet::processInfoVectorToWstrVector(
+	std::vector<ProcessInfo> *pi
+) 
+{
+	if (pi == nullptr)
+	{
+		throw std::invalid_argument("null passed");
+	}
+
+	std::vector<std::vector<std::wstring>> result;
+
+	for (size_t i = 0; i < pi->size(); i++)
+	{
+		result.push_back(std::vector<std::wstring>());
+	}
+
+	for (size_t i = 0; i < pi->size(); i++)
+	{
+		result[i].push_back(dwordToWstring((*pi)[i].processId));
+		result[i].push_back(dwordToWstring((*pi)[i].runThreads));
+		result[i].push_back(dwordToWstring((*pi)[i].parentProcessId));
+
+		result[i].push_back(std::wstring((*pi)[i].fileName));
+		result[i].push_back(std::wstring((*pi)[i].userName));
+		result[i].push_back(std::wstring((*pi)[i].domainName));
+
+		result[i].push_back(doubleToWstring((*pi)[i].workingSetInMb));
+		result[i].push_back(doubleToWstring((*pi)[i].workingSetPrivateInMb));
+		result[i].push_back(doubleToWstring((*pi)[i].io));
+		result[i].push_back(doubleToWstring((*pi)[i].processorUsage));
+		result[i].push_back(doubleToWstring((*pi)[i].elapsedTime));
+	}
+
+	return result;
+}
 
 
 

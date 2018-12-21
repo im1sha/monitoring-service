@@ -4,19 +4,20 @@ ProcessMonitor::ProcessMonitor()
 {
 	section_ = new CRITICAL_SECTION();
 	::InitializeCriticalSectionAndSpinCount(section_, DEFAULT_SPIN_COUNT);
+	readyEvent_ = ::CreateEvent(nullptr, true, false, nullptr);
 }
 
 ProcessMonitor::~ProcessMonitor()
 {
+	::WaitForSingleObject(readyEvent_, INFINITE);
+	if (readyEvent_ != nullptr)
+	{
+		::CloseHandle(readyEvent_);
+	}
 	if (section_ != nullptr)
 	{
 		::DeleteCriticalSection(section_);
 		delete section_;
-	}
-
-	while (isRunning())
-	{
-		::Sleep(1);
 	}
 }
 
@@ -52,6 +53,7 @@ void __stdcall ProcessMonitor::keepTracking(ProcessMonitor * monitor)
 		monitor->setPerfomanceData(pi);
 		::Sleep(DEFAULT_TIMEOUT);
 	}
+	::SetEvent(monitor->readyEvent_);
 }
 
 void __stdcall ProcessMonitor::beginThread()
@@ -314,9 +316,11 @@ void __stdcall ProcessMonitor::writeLogonDataOnError(
 bool __stdcall ProcessMonitor::isRunning()
 {
 	bool result = false;
+
 	::EnterCriticalSection(section_);
 	result = running_;
 	::LeaveCriticalSection(section_);
+		
 	return result;
 }
 

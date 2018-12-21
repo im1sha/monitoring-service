@@ -15,10 +15,6 @@ Window::~Window()
 	{
 		delete this->spreadSheet_;
 	}
-	if (monitor_ != nullptr)
-	{
-		delete this->monitor_;
-	}
 }
 
 int __stdcall Window::messageLoop()
@@ -96,7 +92,7 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	{
 		if (window != nullptr && window->spreadSheet_ != nullptr)
 		{
-			window->processCreationRequest();
+			//window->processCreationRequest();
 		}
 		break;
 	}
@@ -124,14 +120,14 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	{
 		if (s != nullptr)
 		{
-			s->respondOnTimer();
+			//s->respondOnTimer();
 		}
 	}
 	case WM_LOAD_SPREADSHEET:
 	{
 		if (s != nullptr)
 		{
-			s->update();
+			//s->update();
 		}
 		break;
 	}
@@ -140,7 +136,7 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	{
 		if (s != nullptr)
 		{
-			s->update();
+			//s->update();
 		}
 		return ::DefWindowProc(hWnd, message, wParam, lParam);
 	}
