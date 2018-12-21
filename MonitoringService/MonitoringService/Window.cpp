@@ -112,6 +112,14 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 		}
 		return 0;
 	}
+	case WM_KEYDOWN:
+	{
+		if (s != nullptr)
+		{
+			s->respondOnKeyPress(wParam);
+		}
+		break;
+	}
 	case WM_TIMER:
 	{
 		if (s != nullptr)

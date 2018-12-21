@@ -11,6 +11,7 @@
 #include <iostream>
 #include <math.h>
 #include "ProcessMonitor.h"
+#include "ProcessInfo.h"
 
 class SpreadSheet {
 public:
@@ -18,36 +19,36 @@ public:
 	SpreadSheet(HWND hWnd, ProcessMonitor* monitor);
 	~SpreadSheet();
 
-	static const int MAX_CELLS = 81;
-	const int MAX_LINES = 9;
-	const int MIN_LINES = 1;
+	void __stdcall update();
+	void __stdcall initialize();
+	bool __stdcall isInitialized();
+	POINT __stdcall getMinWindowSize();
+	void __stdcall respondOnTimer();
+	void __stdcall respondOnKeyPress(WPARAM wParam);
 
-	void update();
-	void initialize(/*int rows, int columns, std::vector<std::wstring> strings, LPARAM lParam*/);
-
-	bool isInitialized();
-	POINT getMinWindowSize();
-	void respondOnTimer();
+	
 
 private:
-
+	
 	HWND hWnd_ = nullptr; // associated HWND
 	HDC hDC_ = nullptr; // device context
 
 	ProcessMonitor * monitor_ = nullptr;
 
-	WCHAR** tableStrings_ = nullptr;
-	std::vector<std::vector<int> > wordsLenghts_;
+	std::vector<ProcessInfo> pi_;
+	std::vector<std::vector<std::wstring>> tableStrings_;
 
-	LONG minColumnWidth_ = 0;
-	LONG firstRowHeight_ = 0;
-	LONG defaultColumnWidth_ = 0;
+	std::vector<LONG> columnWidths_;
 
-	LONG lineHeight_ = 0;
-	int spaceWidth_ = 0;
+	LONG defaultColumnWidth_;
+	LONG minColumnWidth_;
 
-	int rows_ = 0;
-	int columns_ = 0;
+	LONG spaceWidth_;
+
+	LONG lineHeight_;
+	
+	int currentTopLine_;
+	int currentTopRow_;
 
 	bool isInitialized_ = false;
 
@@ -65,21 +66,22 @@ private:
 	COLORREF oldColor_;
 
 	/* private methods */
-	void deinitialize();
-	void draw(int rows, int columns);
+	void __stdcall deinitialize();
+	void __stdcall draw();
 
-	void paintTable(int rows, int columns, int xStep, std::vector<int> ySteps, int totalWidth, std::vector<int> textHeights, wchar_t** strings, HDC wndDC);
+	void __stdcall paintTable(
+		LONG xStep,
+		std::vector<LONG> ySteps,
+		int totalWidth,
+		std::vector<std::vector<std::wstring>> strings,
+		HDC wndDC
+	);
 
-	// text paremeters calculating
-	std::vector<int> getTextHeights(std::vector<std::vector<int> > lengths, int lineWidth, int charHeight);
-	int getMaxLinesInRow(std::vector<std::vector<int>> lengths, int lineWidth);
-	void processStrings(std::vector<std::wstring> strings);
+	void __stdcall getCellParameters(std::vector<std::vector<std::wstring>> strings);
 
-	// string processing
-	std::wstring deleteExtraDelimiters(const std::wstring s, wchar_t delimiter);
-	std::vector<std::wstring> split(const std::wstring stringToSplit, wchar_t delimiter);
-	WCHAR** toWcharArray(std::vector<std::wstring> strings);
-	void freeWcharStringArray(wchar_t ** arrayToFree, size_t length);
-
-	
+	void __stdcall up();
+	void __stdcall down();
+	void __stdcall left();
+	void __stdcall right();
 };
+

@@ -6,63 +6,51 @@ SpreadSheet::SpreadSheet(HWND hWnd, ProcessMonitor* monitor)
 {
 	this->hWnd_ = hWnd;
 	this->monitor_ = monitor;
+	if (this->monitor_ != nullptr)
+	{
+		this->monitor_->runAsBackground();
+	}
 }
 
 SpreadSheet::~SpreadSheet()
 {
+	if (this->monitor_ != nullptr)
+	{
+		this->monitor_->shutdown();
+	}
 	this->deinitialize();
 }
 
-void SpreadSheet::initialize(/*int rows, int columns, std::vector<std::wstring> strings, LPARAM lParam*/)
+void __stdcall SpreadSheet::initialize()
 {
-	//rows_ = rows;
-	//columns_ = columns;
+	HDC winDC = ::GetDC(hWnd_);
 
-	//HDC winDC = ::GetDC(hWnd_);
+	defaultColumnWidth_ = ::GetSystemMetrics(SM_CXSCREEN) / 10;
 
-	//defaultColumnWidth_ = ::GetSystemMetrics(SM_CXSCREEN) / columns_ / 3;
+	hPen_ = ::CreatePen(PS_SOLID, 1, RGB(200, 100, 200));
+	hOldPen_ = (HPEN) ::SelectObject(winDC, hPen_);
 
-	//hPen_ = ::CreatePen(PS_SOLID, 1, RGB(200, 100, 200));
-	//hOldPen_ = (HPEN) ::SelectObject(winDC, hPen_);
+	oldBackground_ = ::SetBkMode(winDC, TRANSPARENT);
 
-	//oldBackground_ = ::SetBkMode(winDC, TRANSPARENT);
+	hFont_ = ::CreateFont(DEFAULT_FONT_SIZE, NULL, NULL, NULL,
+		FW_NORMAL, FALSE, FALSE, FALSE,
+		DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS,
+		CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
+		DEFAULT_PITCH | FF_SWISS, DEFAULT_FONT.c_str());
+	hPreviousFont_ = ::SelectObject(winDC, hFont_);
+	oldColor_ = ::SetTextColor(winDC, RGB(0, 0, 0));
 
-	//hFont_ = ::CreateFont(DEFAULT_FONT_SIZE, NULL, NULL, NULL,
-	//	FW_NORMAL, FALSE, FALSE, FALSE,
-	//	DEFAULT_CHARSET, OUT_TT_ONLY_PRECIS,
-	//	CLIP_DEFAULT_PRECIS, NONANTIALIASED_QUALITY,
-	//	DEFAULT_PITCH | FF_SWISS, DEFAULT_FONT.c_str());
-	//hPreviousFont_ = ::SelectObject(winDC, hFont_);
-	//oldColor_ = ::SetTextColor(winDC, RGB(0, 0, 0));
+	// retrieve space width
+	SIZE spaceSize = {};
+	::GetTextExtentPoint32(winDC, L" ", 1, &spaceSize);
+	spaceWidth_ = spaceSize.cx;
 
-	//// retrieve space width
-	//SIZE spaceSize = {};
-	//::GetTextExtentPoint32(winDC, L" ", 1, &spaceSize);
-	//spaceWidth_ = spaceSize.cx;
+	::ReleaseDC(hWnd_, winDC);
 
-	//::ReleaseDC(hWnd_, winDC);
-
-	//this->processStrings(strings);
-
-	//// find minColumnWidth_ by length of word with max length
-	//for (size_t i = 0; i < wordsLenghts_.size(); i++)
-	//{
-	//	for (size_t j = 0; j < wordsLenghts_[i].size(); j++)
-	//	{
-	//		if (wordsLenghts_[i][j] + spaceWidth_ > minColumnWidth_)
-	//		{
-	//			minColumnWidth_ = wordsLenghts_[i][j] + spaceWidth_;
-	//		}
-	//	}
-	//}
-	//if (minColumnWidth_ > defaultColumnWidth_)
-	//{
-	//	minColumnWidth_ = defaultColumnWidth_;
-	//}
-	//isInitialized_ = true;
+	isInitialized_ = true;
 }
 
-void SpreadSheet::deinitialize()
+void __stdcall SpreadSheet::deinitialize()
 {
 	isInitialized_ = false;
 
@@ -93,15 +81,15 @@ void SpreadSheet::deinitialize()
 	::ReleaseDC(hWnd_, wndDC);
 
 	// free memory
-	this->freeWcharStringArray(tableStrings_, (size_t)columns_ * rows_);
+	delete this->monitor_;
 }
 
-bool SpreadSheet::isInitialized()
+bool __stdcall SpreadSheet::isInitialized()
 {
 	return isInitialized_;
 }
 
-POINT SpreadSheet::getMinWindowSize()
+POINT __stdcall SpreadSheet::getMinWindowSize()
 {
 	RECT clientSize;
 	RECT windowSize;
@@ -114,24 +102,74 @@ POINT SpreadSheet::getMinWindowSize()
 	deltaSize.x = (windowSize.right - windowSize.left) - clientSize.right;
 	deltaSize.y = (windowSize.bottom - windowSize.top) - clientSize.bottom;
 
-	return { minColumnWidth_ * columns_ + deltaSize.x, firstRowHeight_ + deltaSize.y };
+	return { minColumnWidth_ + deltaSize.x, lineHeight_ + deltaSize.y };
 }
 
-void SpreadSheet::respondOnTimer()
+void __stdcall SpreadSheet::respondOnTimer()
 {
+	this->pi_ = this->monitor_->getPerfomanceData();
+	update();
+}
+
+void __stdcall SpreadSheet::respondOnKeyPress(WPARAM wParam)
+{
+	switch (wParam)
+	{
+	case VK_LEFT:
+	{
+		left();
+		break;
+	}
+	case VK_RIGHT:
+	{
+		right();
+		break;
+	}
+	case VK_DOWN:
+	{	
+		down();
+		break;	
+	}
+	case VK_UP:
+	{
+		up();
+		break;
+	}
+	}
+	update();
+}
+
+void __stdcall SpreadSheet::up()
+{
+	
+}
+
+void __stdcall SpreadSheet::down()
+{
+
+}
+
+void __stdcall SpreadSheet::left()
+{
+
+}
+
+void __stdcall SpreadSheet::right()
+{
+
 }
 
 // updates table represetation
-void SpreadSheet::update()
+void __stdcall SpreadSheet::update()
 {
 	if (isInitialized_)
 	{
-		this->draw(rows_, columns_);
+		this->draw();
 	}
 }
 
 // draws table and fill it with content
-void SpreadSheet::draw(int rows, int columns)
+void __stdcall SpreadSheet::draw()
 {
 	// client window's data gathering
 	HDC wndDC = ::GetDC(hWnd_);
@@ -139,7 +177,7 @@ void SpreadSheet::draw(int rows, int columns)
 	RECT clientRect;
 	::GetClientRect(hWnd_, &clientRect);
 
-	tagPAINTSTRUCT ps{
+	tagPAINTSTRUCT ps {
 		ps.hdc = wndDC,
 		ps.fErase = true,
 		ps.rcPaint = clientRect
@@ -189,7 +227,13 @@ void SpreadSheet::draw(int rows, int columns)
 }
 
 // paints table 
-void SpreadSheet::paintTable(int rows, int columns, int xStep, std::vector<int> ySteps, int totalWidth, std::vector<int> textHeights, wchar_t** strings, HDC wndDC)
+void __stdcall SpreadSheet::paintTable(
+	LONG xStep,
+	std::vector<LONG> ySteps,
+	int totalWidth, 
+	std::vector<std::vector<std::wstring>> strings, 
+	HDC wndDC
+)
 {
 	int currentBottom = 0;
 
@@ -234,190 +278,44 @@ void SpreadSheet::paintTable(int rows, int columns, int xStep, std::vector<int> 
 	);
 }
 
-#pragma region TextParametersCalculating
+// initializes columnWidths_ & lineHeight_
+void __stdcall SpreadSheet::getCellParameters(
+	std::vector<std::vector<std::wstring>> strings
+)
 
-// initializes wordsLenghts_ & tableStrings_ & lineHeight_ variables
-void SpreadSheet::processStrings(std::vector<std::wstring> strings)
 {
 	HDC wndDC = ::GetDC(hWnd_);
 
-	for (size_t i = 0; i < strings.size(); i++)
+	size_t totalColumns = 0;
+	if (strings.size != 0)
 	{
-		strings[i] = this->deleteExtraDelimiters(strings[i], ' ');
-		std::vector<std::wstring> words = this->split(strings[i], ' ');
-		wchar_t** wcharWords = this->toWcharArray(words);
-
-		std::vector<int> cellLenghts;
-		SIZE stringSize = {};
-
-		for (size_t j = 0; j < words.size(); j++)
-		{
-			::GetTextExtentPoint32(wndDC, wcharWords[j], (int)words[j].size(), &stringSize); // get word length 
-			cellLenghts.push_back(stringSize.cx);
-		}
-
-		freeWcharStringArray(wcharWords, words.size());
-
-		wordsLenghts_.push_back(cellLenghts);
+		totalColumns = strings[0].size();
 	}
-	tableStrings_ = this->toWcharArray(strings);
 
-	SIZE stringSize = {};
-	for (size_t i = 0; i < strings.size(); i++)
+	columnWidths_ = std::vector<LONG>(totalColumns);
+
+	SIZE stringSize = { };
+	for (size_t j = 0; j < strings.size(); j++)
 	{
-		::GetTextExtentPoint32(wndDC, tableStrings_[i], (int)strings[i].size(), &stringSize); // get string length 
-		if (stringSize.cy > lineHeight_)
+		for (size_t i = 0; i < strings[j].size(); i++)
 		{
-			lineHeight_ = stringSize.cy;
-		}
+			::GetTextExtentPoint32(wndDC, tableStrings_[i][j].c_str(),
+				(int)strings[i].size(), &stringSize); // get string length 
+			if (stringSize.cy > lineHeight_)
+			{
+				lineHeight_ = stringSize.cy;
+			}
+			if (stringSize.cx > columnWidths_[i])
+			{
+				columnWidths_[i] = stringSize.cx;
+			}
+		}		
 	}
 
 	::ReleaseDC(hWnd_, wndDC);
 }
 
-// Calculates max text height in row
-std::vector<int> SpreadSheet::getTextHeights(std::vector<std::vector<int> > lengths, int lineWidth, int lineHeight)
-{
-	std::vector<int> textHeights;
-	if (lengths.size() != 0)
-	{
-		for (size_t i = 0; i < rows_; i++)
-		{
-			std::vector<std::vector<int> >::const_iterator start = wordsLenghts_.begin() + i * columns_;
-			std::vector<std::vector<int> >::const_iterator end = wordsLenghts_.begin() + (i + 1) * columns_;
-			std::vector<std::vector<int> > rowValues(start, end);
-			textHeights.push_back(getMaxLinesInRow(rowValues, lineWidth));
-		}
-		for (size_t i = 0; i < textHeights.size(); i++)
-		{
-			textHeights[i] *= lineHeight;
-		}
-	}
 
-	return textHeights;
-}
 
-// gets total lines required by cells of this row
-int SpreadSheet::getMaxLinesInRow(std::vector<std::vector<int> > lengths, int lineWidth)
-{
-	int maxLines = 1;
-	for (size_t i = 0; i < lengths.size(); i++)
-	{
-		int currentLines = 1;
-		int filledNow = 0;
-		for (size_t j = 0; j < lengths[i].size(); j++)
-		{
-			filledNow += lengths[i][j];
 
-			if (j != lengths[i].size() - 1)
-			{
-				filledNow += spaceWidth_;
-			}
 
-			if (filledNow > lineWidth)
-			{
-				if (lengths[i][j] <= lineWidth)
-				{
-					currentLines += 1;
-					filledNow = lengths[i][j];
-				}
-				else
-				{
-					currentLines += 1 + (lengths[i][j] / lineWidth);
-					filledNow = lengths[i][j] % lineWidth;
-				}
-			}
-		}
-
-		if (currentLines > maxLines)
-		{
-			maxLines = currentLines;
-		}
-	}
-
-	return maxLines;
-}
-
-#pragma endregion
-
-#pragma region StringProcessing
-
-// gets wchar_t** representation of std::vector<std::wstring>
-wchar_t** SpreadSheet::toWcharArray(std::vector<std::wstring> strings)
-{
-	if (strings.size() == 0)
-	{
-		return nullptr;
-	}
-
-	WCHAR** result = (WCHAR**)::calloc(SpreadSheet::MAX_CELLS,
-		sizeof(WCHAR*));
-
-	size_t stringLenght;
-	for (size_t i = 0; i < strings.size(); i++)
-	{
-		stringLenght = strings[i].size();
-		result[i] = (WCHAR*)::calloc(stringLenght + 1, sizeof(WCHAR));
-		strings[i].copy(result[i], stringLenght, 0);
-	}
-
-	return result;
-}
-
-// splits string by passed delimiter
-std::vector<std::wstring> SpreadSheet::split(const std::wstring stringToSplit, wchar_t delimiter)
-{
-	std::vector<std::wstring> elements;
-	std::wstringstream ss(stringToSplit);
-	std::wstring item;
-	while (getline(ss, item, delimiter))
-	{
-		elements.push_back(item);
-	}
-	return elements;
-}
-
-// deletes extra delimeters in string
-std::wstring SpreadSheet::deleteExtraDelimiters(const std::wstring s, wchar_t delimiter)
-{
-	std::vector<std::wstring> elements;
-	std::wstringstream ss(s);
-	std::wstring item;
-	while (getline(ss, item, delimiter))
-	{
-		if (item.size() != 0)
-		{
-			elements.push_back(item);
-		}
-	}
-	std::wstring result = L"";
-
-	if (elements.size() != 0)
-	{
-		for (size_t i = 0; i < elements.size() - 1; i++)
-		{
-			result += elements[i] + delimiter;
-		}
-		result += elements[elements.size() - 1];
-	}
-
-	return result;
-}
-
-// frees wchar_t** valiable
-void SpreadSheet::freeWcharStringArray(wchar_t** arrayToFree, size_t length)
-{
-	if (arrayToFree != nullptr)
-	{
-		for (size_t j = 0; j < length; j++)
-		{
-			if (arrayToFree[j] != nullptr)
-			{
-				::free(arrayToFree[j]);
-			}
-		}
-		::free(arrayToFree);
-	}
-}
-
-#pragma endregion
