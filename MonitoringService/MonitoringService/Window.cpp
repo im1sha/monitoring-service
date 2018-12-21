@@ -46,6 +46,8 @@ HWND __stdcall Window::initialize(HINSTANCE hInstance, int nCmdShow)
 	// save a reference to the current Window instance 
 	::SetWindowLongPtr(hWnd, GWLP_USERDATA, (LONG_PTR)this);
 
+	::PostMessage(hWnd, WM_LOAD_SPREADSHEET, 0, 0);
+
 	::ShowWindow(hWnd, nCmdShow);
 	::UpdateWindow(hWnd);
 
@@ -82,18 +84,24 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 
 	switch (message)
 	{
-	case WM_CREATE:
+	//case WM_CREATE:
+	//{	
+	//	::DefWindowProc(hWnd, message, wParam, lParam);	
+	//	if (window != nullptr)
+	//	{
+	//		::PostMessage(window->hWnd_, WM_LOAD_SPREADSHEET, 0, 0);
+	//	}
+	//	
+	//	break;
+	//}
+	case WM_LOAD_SPREADSHEET: 
 	{
-		::DefWindowProc(hWnd, message, wParam, lParam);
-		::PostMessage(hWnd, WM_CREATE_SPREADSHEET, 0, 0);
-		break;
-	}
-	case WM_CREATE_SPREADSHEET:
-	{
-		if (window != nullptr && window->spreadSheet_ != nullptr)
+		if (window != nullptr && s != nullptr)
 		{
-			//window->processCreationRequest();
+			s->initialize();
+			s->update();
 		}
+
 		break;
 	}
 	case WM_GETMINMAXINFO:
@@ -120,14 +128,7 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	{
 		if (s != nullptr)
 		{
-			//s->respondOnTimer();
-		}
-	}
-	case WM_LOAD_SPREADSHEET:
-	{
-		if (s != nullptr)
-		{
-			//s->update();
+			s->respondOnTimer();
 		}
 		break;
 	}
@@ -136,7 +137,7 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	{
 		if (s != nullptr)
 		{
-			//s->update();
+			s->update();
 		}
 		return ::DefWindowProc(hWnd, message, wParam, lParam);
 	}
@@ -153,15 +154,6 @@ LRESULT __stdcall Window::windowProc(HWND hWnd, UINT message, WPARAM wParam, LPA
 	return 0;
 }
 
-bool __stdcall Window::processCreationRequest()
-{
-	SpreadSheet* s = this->spreadSheet_;
-	HWND hWnd = this->hWnd_;
 
-	s->initialize();
-	::PostMessage(this->hWnd_, WM_LOAD_SPREADSHEET, 0, 0);
-
-	return true;
-}
 
 

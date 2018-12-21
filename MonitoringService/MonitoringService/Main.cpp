@@ -33,7 +33,7 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 		//		p.userName, p.domainName, p.workingSetInMb, p.workingSetPrivateInMb, p.io, p.processorUsage, p.elapsedTime);
 		//}
 
-	for (size_t i = 0; i < 10; i++)
+	for (size_t i = 0; i < 100; i++)
 	{	
 		pi = monitor->getPerfomanceData();
 
@@ -127,5 +127,6 @@ int wmain(int argc, wchar_t * argv[], wchar_t * envp[])
 //
 //
 
-*/
 
+
+*/

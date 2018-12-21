@@ -36,7 +36,6 @@ private:
 	ProcessMonitor * monitor_ = nullptr;
 
 	std::vector<ProcessInfo> pi_;
-	std::vector<std::vector<std::wstring>> tableStrings_;
 
 	std::vector<LONG> columnWidths_;
 
@@ -85,7 +84,7 @@ private:
 
 	std::wstring __stdcall dwordToWstring(DWORD d);
 
-	std::vector<std::vector<std::wstring>> __stdcall processInfoVectorToWstrVector(std::vector<ProcessInfo>* pi);
+	std::vector<std::vector<std::wstring>> __stdcall processInfoVectorToWstrVector(std::vector<ProcessInfo> pi);
 
 	void __stdcall up();
 	void __stdcall down();

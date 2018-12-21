@@ -29,7 +29,6 @@ private:
 	SpreadSheet* spreadSheet_ = nullptr;
 	ProcessMonitor* monitor_ = nullptr;
 
-	bool __stdcall processCreationRequest();
 	HWND __stdcall initialize(HINSTANCE hInstance, int nCmdShow);
 	ATOM __stdcall registerClass(WNDCLASSEX wndClassEx, HINSTANCE hInstance, WNDPROC wndProc);
 	static LRESULT __stdcall windowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);

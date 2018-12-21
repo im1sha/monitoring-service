@@ -12,7 +12,7 @@ SpreadSheet::SpreadSheet(HWND hWnd, ProcessMonitor* monitor)
 	{
 		this->monitor_->runAsBackground();
 	}
-	::SetTimer(hWnd, 1, 1000, nullptr);
+	::SetTimer(hWnd, 1, 2000, nullptr);
 }
 
 SpreadSheet::~SpreadSheet()
@@ -174,10 +174,10 @@ void __stdcall SpreadSheet::right()
 // updates table represetation
 void __stdcall SpreadSheet::update()
 {
-	if (isInitialized_)
+	if (isInitialized())
 	{
 		::EnterCriticalSection(piSection_);
-		std::vector<std::vector<std::wstring>> content = processInfoVectorToWstrVector(&pi_);
+		std::vector<std::vector<std::wstring>> content = processInfoVectorToWstrVector(pi_);
 		::LeaveCriticalSection(piSection_);
 		if (content.size() != 0)
 		{
@@ -271,25 +271,23 @@ void __stdcall SpreadSheet::paintTable(
 			::DrawText(wndDC, textToPrint, (int)wcslen(textToPrint),
 				&textRect, DT_CENTER | DT_WORDBREAK | DT_EDITCONTROL);
 
-			delete[] textToPrint;
 		}
 	}
 
 	// fill area to the right of the table
-	/*::Rectangle(
+	::Rectangle(
 		wndDC,
 		(LONG)(yStep * columns),
 		(LONG)0,
 		(LONG)(yStep * columns + totalWidth % yStep + 1),
 		(LONG)currentBottom + 1
-	);*/
+	);
 }
 
 // initializes columnWidths_ & lineHeight_
 void __stdcall SpreadSheet::getCellParameters(
 	std::vector<std::vector<std::wstring>> strings
 )
-
 {
 	HDC wndDC = ::GetDC(hWnd_);
 
@@ -299,22 +297,27 @@ void __stdcall SpreadSheet::getCellParameters(
 		totalColumns = strings[0].size();
 	}
 
+	lineHeight_ = 0;
 	columnWidths_ = std::vector<LONG>(totalColumns);
 
 	SIZE stringSize = { };
-	for (size_t j = 0; j < strings.size(); j++)
+	for (size_t i = 0; i < strings.size(); i++) // 
 	{
-		for (size_t i = 0; i < strings[j].size(); i++)
+		for (size_t j = 0; j < strings[i].size(); j++)
 		{
-			::GetTextExtentPoint32(wndDC, tableStrings_[i][j].c_str(),
-				(int)strings[i].size(), &stringSize); // get string length 
+			const WCHAR* str = strings[i][j].c_str();
+
+			::GetTextExtentPoint32(wndDC, str,
+				(int)strings[i][j].length() + 1, &stringSize); // get string length 
+			
+			
 			if (stringSize.cy > lineHeight_)
 			{
 				lineHeight_ = stringSize.cy;
 			}
-			if (stringSize.cx > columnWidths_[i])
+			if (stringSize.cx > columnWidths_[j])
 			{
-				columnWidths_[i] = stringSize.cx;
+				columnWidths_[j] = stringSize.cx;
 			}
 		}		
 	}
@@ -339,36 +342,31 @@ std::wstring __stdcall SpreadSheet::dwordToWstring(DWORD d)
 }
 
 std::vector<std::vector<std::wstring>> __stdcall SpreadSheet::processInfoVectorToWstrVector(
-	std::vector<ProcessInfo> *pi
+	std::vector<ProcessInfo> pi
 ) 
 {
-	if (pi == nullptr)
-	{
-		throw std::invalid_argument("null passed");
-	}
-
 	std::vector<std::vector<std::wstring>> result;
 
-	for (size_t i = 0; i < pi->size(); i++)
+	for (size_t i = 0; i < pi.size(); i++)
 	{
 		result.push_back(std::vector<std::wstring>());
 	}
 
-	for (size_t i = 0; i < pi->size(); i++)
+	for (size_t i = 0; i < pi.size(); i++)
 	{
-		result[i].push_back(dwordToWstring((*pi)[i].processId));
-		result[i].push_back(dwordToWstring((*pi)[i].runThreads));
-		result[i].push_back(dwordToWstring((*pi)[i].parentProcessId));
+		result[i].push_back(dwordToWstring((pi)[i].processId));
+		result[i].push_back(dwordToWstring((pi)[i].runThreads));
+		result[i].push_back(dwordToWstring((pi)[i].parentProcessId));
 
-		result[i].push_back(std::wstring((*pi)[i].fileName));
-		result[i].push_back(std::wstring((*pi)[i].userName));
-		result[i].push_back(std::wstring((*pi)[i].domainName));
+		result[i].push_back(std::wstring((pi)[i].fileName));
+		result[i].push_back(std::wstring((pi)[i].userName));
+		result[i].push_back(std::wstring((pi)[i].domainName));
 
-		result[i].push_back(doubleToWstring((*pi)[i].workingSetInMb));
-		result[i].push_back(doubleToWstring((*pi)[i].workingSetPrivateInMb));
-		result[i].push_back(doubleToWstring((*pi)[i].io));
-		result[i].push_back(doubleToWstring((*pi)[i].processorUsage));
-		result[i].push_back(doubleToWstring((*pi)[i].elapsedTime));
+		result[i].push_back(doubleToWstring((pi)[i].workingSetInMb));
+		result[i].push_back(doubleToWstring((pi)[i].workingSetPrivateInMb));
+		result[i].push_back(doubleToWstring((pi)[i].io));
+		result[i].push_back(doubleToWstring((pi)[i].processorUsage));
+		result[i].push_back(doubleToWstring((pi)[i].elapsedTime));
 	}
 
 	return result;
